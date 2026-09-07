@@ -1,18 +1,16 @@
 {
-  "name": "@ticketing/api",
+  "name": "@ticketing/contracts",
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "scripts": {
-    "dev": "node --watch src/main.ts",
-    "typecheck": "tsc --noEmit"
+  "exports": {
+    ".": "./src/index.ts"
   },
-  "dependencies": {
-    "@ticketing/contracts": "workspace:*"
+  "scripts": {
+    "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
     "@ticketing/tsconfig": "workspace:*",
-    "@types/node": "catalog:",
     "typescript": "catalog:"
   }
 }

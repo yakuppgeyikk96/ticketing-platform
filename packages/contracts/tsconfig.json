@@ -1,0 +1,7 @@
+{
+  "extends": "@ticketing/tsconfig/base.json",
+  "compilerOptions": {
+    "rootDir": "src"
+  },
+  "include": ["src"]
+}

@@ -119,6 +119,10 @@ importers:
   .: {}
 
   apps/api:
+    dependencies:
+      '@ticketing/contracts':
+        specifier: workspace:*
+        version: link:../../packages/contracts
     devDependencies:
       '@ticketing/tsconfig':
         specifier: workspace:*
@@ -126,6 +130,15 @@ importers:
       '@types/node':
         specifier: 'catalog:'
         version: 24.13.3
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+
+  packages/contracts:
+    devDependencies:
+      '@ticketing/tsconfig':
+        specifier: workspace:*
+        version: link:../tsconfig
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
