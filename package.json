@@ -1,0 +1,9 @@
+{
+  "name": "ticketing-platform",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@12.3.4",
+  "engines": {
+    "node": ">=24"
+  }
+}
