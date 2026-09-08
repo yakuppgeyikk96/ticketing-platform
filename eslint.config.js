@@ -1,6 +1,6 @@
 import js from "@eslint/js";
-import { defineConfig } from "eslint/config";
 import prettier from "eslint-config-prettier";
+import { defineConfig } from "eslint/config";
 import tseslint from "typescript-eslint";
 
 export default defineConfig(
@@ -13,6 +13,20 @@ export default defineConfig(
         projectService: true,
         tsconfigRootDir: import.meta.dirname,
       },
+    },
+    rules: {
+      "@typescript-eslint/no-floating-promises": [
+        "error",
+        {
+          allowForKnownSafeCalls: [
+            {
+              from: "package",
+              name: ["test", "describe", "it"],
+              package: "node:test",
+            },
+          ],
+        },
+      ],
     },
   },
   prettier,
