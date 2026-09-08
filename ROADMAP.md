@@ -197,6 +197,6 @@ kavram → Node/V8 veya tarayıcı gerçeği → uygulama → projeye bağlantı
 
 ## İlerleme
 
-| Dilim       | Durum        | Not |
-| ----------- | ------------ | --- |
-| 0 · İskelet |      ✅      |     |
+| Dilim       | Durum | Not |
+| ----------- | ----- | --- |
+| 0 · İskelet | ✅    |     |
