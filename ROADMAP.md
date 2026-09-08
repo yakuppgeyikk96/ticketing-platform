@@ -199,4 +199,4 @@ kavram → Node/V8 veya tarayıcı gerçeği → uygulama → projeye bağlantı
 
 | Dilim       | Durum        | Not |
 | ----------- | ------------ | --- |
-| 0 · İskelet | devam ediyor |     |
+| 0 · İskelet |      ✅      |     |
