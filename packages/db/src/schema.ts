@@ -27,6 +27,7 @@ export const users = pgTable(
     email: text("email").notNull(),
     passwordHash: text("password_hash"),
     fullName: text("full_name"),
+    deletedAt: timestamp("deleted_at", { withTimezone: true }),
     ...timestamps,
   },
   (t) => [uniqueIndex("users_email_lower_idx").on(sql`lower(${t.email})`)],
