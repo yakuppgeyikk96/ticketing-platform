@@ -4,15 +4,17 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "node --watch src/main.ts",
+    "dev": "node --env-file=../../.env --watch src/main.ts",
     "typecheck": "tsc --noEmit",
-    "test": "node --test"
+    "test": "node --env-file=../../.env --test"
   },
   "dependencies": {
     "@ticketing/contracts": "workspace:*",
+    "@ticketing/db": "workspace:*",
     "fastify": "catalog:",
     "zod": "catalog:",
-    "fastify-type-provider-zod": "catalog:"
+    "fastify-type-provider-zod": "catalog:",
+    "fastify-plugin": "catalog:"
   },
   "devDependencies": {
     "@ticketing/tsconfig": "workspace:*",

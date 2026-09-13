@@ -5,35 +5,34 @@ import {
 } from "@ticketing/contracts";
 import Fastify from "fastify";
 import {
-  validatorCompiler,
   serializerCompiler,
+  validatorCompiler,
   type ZodTypeProvider,
 } from "fastify-type-provider-zod";
+import dbPlugin from "./plugins/db.ts";
 
-export function createApp() {
+export interface AppOptions {
+  connectionString: string;
+}
+
+export async function createApp(opts: AppOptions) {
   const app = Fastify({ logger: true });
 
   app.setValidatorCompiler(validatorCompiler);
   app.setSerializerCompiler(serializerCompiler);
 
-  app.withTypeProvider<ZodTypeProvider>().get(
-    "/health",
-    {
-      schema: {
-        response: {
-          200: healthResponseSchema,
-        },
-      },
-    },
-    () => {
-      const res: HealthResponse = {
-        status: "ok",
-        version: API_VERSION,
-      };
+  await app.register(dbPlugin, { connectionString: opts.connectionString });
 
-      return res;
-    },
-  );
+  app
+    .withTypeProvider<ZodTypeProvider>()
+    .get(
+      "/health",
+      { schema: { response: { 200: healthResponseSchema } } },
+      () => {
+        const res: HealthResponse = { status: "ok", version: API_VERSION };
+        return res;
+      },
+    );
 
   return app;
 }
