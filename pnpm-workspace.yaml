@@ -12,3 +12,4 @@ catalog:
   "drizzle-kit": ^0.31.10
   pg: ^8.23.0
   "@types/pg": ^8.23.1
+  fastify: ^5.12.4
