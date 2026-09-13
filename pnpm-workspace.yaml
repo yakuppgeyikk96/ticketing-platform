@@ -13,3 +13,8 @@ catalog:
   pg: ^8.23.0
   "@types/pg": ^8.23.1
   fastify: ^5.12.4
+  zod: ^4.6.4
+  "fastify-type-provider-zod": ^7.0.0
+
+minimumReleaseAgeExclude:
+  - zod@4.6.4

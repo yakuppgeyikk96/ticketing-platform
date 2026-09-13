@@ -9,12 +9,14 @@
     "test": "node --test"
   },
   "dependencies": {
-    "@ticketing/contracts": "workspace:*"
+    "@ticketing/contracts": "workspace:*",
+    "fastify": "catalog:",
+    "zod": "catalog:",
+    "fastify-type-provider-zod": "catalog:"
   },
   "devDependencies": {
     "@ticketing/tsconfig": "workspace:*",
     "@types/node": "catalog:",
-    "typescript": "catalog:",
-    "fastify": "catalog:"
+    "typescript": "catalog:"
   }
 }
