@@ -47,7 +47,7 @@ Haritalardaki "kendini test et" soruları istersen sohbet konusu olur, asla eşi
 | Runtime                | Node 24 LTS, TypeScript strict                                        | Haritanın 01 katmanı; `using`, `node:test`, yerleşik fetch                           |
 | Monorepo               | pnpm workspaces                                                       | 01.5 modül/araç zinciri; paket sınırlarını öğrenmek                                  |
 | API                    | Fastify                                                               | 03.8: şema doğrulama + serileştirme hızlandırması, plugin encapsulation              |
-| Veritabanı             | PostgreSQL 17                                                         | 02 katmanının tamamı                                                                 |
+| Veritabanı             | PostgreSQL 18                                                         | 02 katmanının tamamı                                                                 |
 | Veri erişimi           | Drizzle + gerekince raw SQL                                           | Üretilen SQL'i okuma alışkanlığı; migration'ları elle yazıp expand/contract öğrenmek |
 | Cache / kilit / kuyruk | Redis                                                                 | 02.7, rate limiter (Ek D lab 2), hold TTL                                            |
 | Kuyruk                 | Önce PG `SKIP LOCKED` ile kendi kuyruğumuz (Ek D lab 3), sonra BullMQ | Önce içini görmek, sonra hazırını kullanmak                                          |
