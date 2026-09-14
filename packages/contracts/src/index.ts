@@ -27,8 +27,15 @@ export const registerResponseSchema = z.object({
 
 export type RegisterResponse = z.infer<typeof registerResponseSchema>;
 
-export const errorResponseSchema = z.object({
-  message: z.string(),
+export const problemSchema = z.object({
+  type: z.string(),
+  title: z.string(),
+  status: z.int(),
+  detail: z.string().optional(),
+  instance: z.string().optional(),
+  errors: z
+    .array(z.object({ field: z.string(), message: z.string() }))
+    .optional(),
 });
 
-export type ErrorResponse = z.infer<typeof errorResponseSchema>;
+export type ProblemBody = z.infer<typeof problemSchema>;

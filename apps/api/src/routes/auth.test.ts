@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { after, before, test } from "node:test";
+import { problemSchema, type ProblemBody } from "@ticketing/contracts";
 import { createApp } from "../app.ts";
 
 const connectionString = process.env.DATABASE_URL;
@@ -16,6 +17,11 @@ after(() => app.close());
 // Fresh email per call so tests never collide with earlier runs' rows.
 function uniqueEmail() {
   return `Yakup+${randomUUID()}@Example.com`;
+}
+
+// Every error body must satisfy the problem contract; parse it once, then assert on fields.
+function problem(body: unknown): ProblemBody {
+  return problemSchema.parse(body);
 }
 
 test("POST /auth/register creates a user and normalizes the email", async () => {
@@ -56,9 +62,16 @@ test("POST /auth/register returns 409 if the two identical email is sent", async
   });
 
   assert.equal(res2.statusCode, 409);
-  const body: unknown = res2.json();
-  assert.ok(body && typeof body === "object" && "message" in body);
-  assert.equal(body.message, "Email already registered");
+  assert.match(
+    res2.headers["content-type"] ?? "",
+    /^application\/problem\+json/,
+  );
+
+  const body = problem(res2.json());
+  assert.equal(body.type, "/problems/email-taken");
+  assert.equal(body.title, "Email already registered");
+  assert.equal(body.status, 409);
+  assert.equal(body.instance, "/auth/register");
 });
 
 test("POST /auth/register returns 400 if the provided password is not valid", async () => {
@@ -71,4 +84,19 @@ test("POST /auth/register returns 400 if the provided password is not valid", as
   });
 
   assert.equal(res.statusCode, 400);
+
+  const body = problem(res.json());
+  assert.equal(body.type, "/problems/validation");
+  assert.ok(body.errors?.some((e) => e.field === "password"));
+});
+
+test("unknown route returns a 404 problem", async () => {
+  const res = await app.inject({ method: "GET", url: "/nope" });
+
+  assert.equal(res.statusCode, 404);
+  assert.match(
+    res.headers["content-type"] ?? "",
+    /^application\/problem\+json/,
+  );
+  assert.equal(problem(res.json()).type, "/problems/not-found");
 });

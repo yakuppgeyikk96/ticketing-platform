@@ -10,6 +10,7 @@ import {
   type ZodTypeProvider,
 } from "fastify-type-provider-zod";
 import dbPlugin from "./plugins/db.ts";
+import errorsPlugin from "./plugins/errors.ts";
 import authRoutes from "./routes/auth.ts";
 
 export interface AppOptions {
@@ -22,6 +23,7 @@ export async function createApp(opts: AppOptions) {
   app.setValidatorCompiler(validatorCompiler);
   app.setSerializerCompiler(serializerCompiler);
 
+  await app.register(errorsPlugin);
   await app.register(dbPlugin, { connectionString: opts.connectionString });
 
   await app.register(authRoutes, { prefix: "/auth" });

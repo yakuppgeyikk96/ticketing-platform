@@ -1,11 +1,12 @@
 import {
-  errorResponseSchema,
+  problemSchema,
   registerBodySchema,
   registerResponseSchema,
 } from "@ticketing/contracts";
 import type { FastifyPluginCallbackZod } from "fastify-type-provider-zod";
 import { hash } from "@node-rs/argon2";
 import { isUniqueViolation, users } from "@ticketing/db";
+import { ConflictError } from "../errors.ts";
 
 const authRoutes: FastifyPluginCallbackZod = (fastify) => {
   fastify.post(
@@ -15,7 +16,7 @@ const authRoutes: FastifyPluginCallbackZod = (fastify) => {
         body: registerBodySchema,
         response: {
           201: registerResponseSchema,
-          409: errorResponseSchema,
+          409: problemSchema,
         },
       },
     },
@@ -47,7 +48,11 @@ const authRoutes: FastifyPluginCallbackZod = (fastify) => {
         });
       } catch (err) {
         if (isUniqueViolation(err, "users_email_lower_idx")) {
-          return reply.code(409).send({ message: "Email already registered" });
+          throw new ConflictError(
+            "email-taken",
+            "Email already registered",
+            "An account with this email already exists",
+          );
         }
 
         throw err;
