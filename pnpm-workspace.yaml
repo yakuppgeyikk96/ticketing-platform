@@ -16,6 +16,7 @@ catalog:
   zod: ^4.6.4
   "fastify-type-provider-zod": ^7.0.0
   "fastify-plugin": ^6.0.0
+  "@node-rs/argon2": ^2.2.1
 
 minimumReleaseAgeExclude:
   - zod@4.6.4
