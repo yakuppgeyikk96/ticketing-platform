@@ -20,6 +20,7 @@
   "devDependencies": {
     "@ticketing/tsconfig": "workspace:*",
     "@types/node": "catalog:",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "pino-pretty": "catalog:"
   }
 }

@@ -6,7 +6,7 @@ const connectionString = process.env.DATABASE_URL;
 if (!connectionString) throw new Error("DATABASE_URL is not set");
 
 test("GET /health returns ok with version", async (t) => {
-  const app = await createApp({ connectionString });
+  const app = await createApp({ connectionString, logger: false });
   t.after(() => app.close());
 
   const res = await app.inject({ method: "GET", url: "/health" });

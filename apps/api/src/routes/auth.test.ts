@@ -10,7 +10,7 @@ if (!connectionString) throw new Error("DATABASE_URL is not set");
 // One app for the whole file: opening a pool per test is slow and pointless.
 let app: Awaited<ReturnType<typeof createApp>>;
 before(async () => {
-  app = await createApp({ connectionString });
+  app = await createApp({ connectionString, logger: false });
 });
 after(() => app.close());
 
