@@ -16,6 +16,24 @@ test("GET /health returns ok with version", async (t) => {
   assert.deepEqual(res.json(), { status: "ok", version: "0.0.1" });
 });
 
+test("GET /health answers 304 when If-None-Match carries the current ETag", async (t) => {
+  const app = await createApp({ connectionString, logger: false });
+  t.after(() => app.close());
+
+  const first = await app.inject({ method: "GET", url: "/health" });
+  const etag = first.headers.etag;
+  assert.equal(typeof etag, "string");
+
+  const second = await app.inject({
+    method: "GET",
+    url: "/health",
+    headers: { "if-none-match": etag },
+  });
+
+  assert.equal(second.statusCode, 304);
+  assert.equal(second.body, "");
+});
+
 // Just enough shape to assert on; the document itself is much larger.
 const openapiDocSchema = z.object({
   openapi: z.string(),

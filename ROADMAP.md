@@ -221,6 +221,8 @@ kavram → Node/V8 veya tarayıcı gerçeği → uygulama → projeye bağlantı
 
 ## İlerleme
 
-| Dilim       | Durum | Not |
-| ----------- | ----- | --- |
-| 0 · İskelet | ✅    |     |
+| Dilim              | Durum      | Not                                                                                                                                                                                                 |
+| ------------------ | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0 · İskelet        | ✅         | `labs/00-esm-cjs.md`                                                                                                                                                                                |
+| 1 · Domain ve şema | 🔄 artımlı | Karar: şema özellik geldikçe büyüyor. Kimlik tabloları ve migration altyapısı hazır (`docs/schema.md`); mekân/etkinlik/koltuk tabloları ve kolon-yeniden-adlandırma deneyi ilgili özellikle gelecek |
+| 2 · HTTP katmanı   | ✅         | Fastify, zod sözleşmesi, RFC 9457, pino + redaction + request id, graceful shutdown (`labs/02-graceful-shutdown.md`), OpenAPI, ETag. AsyncLocalStorage bağlamı dilim 11'e ertelendi                 |
