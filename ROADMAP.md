@@ -184,6 +184,30 @@ Karar notlarını topla, sistemi 45 dakikada anlat, bir postmortem yaz, mimari g
 
 - Konular: FE K6 frontend system design, teknik liderlik · BE 05 mimari, 11 meslek pratiği
 
+## İki mercek: derinlik ve modül
+
+Her adımın başında iki soru sorulur.
+
+**Derin mi, hızlı mı?** Sektörün gerçekten sorduğu yerde kır, ölç, not yaz; sormadığı yerde asgari ve yeterli olanı yap, geç.
+
+| Derin                                                                                                                                                                                                                             | Orta                                           | Hızlı                                                                                                                   |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| 4 kimlik ve tenant izolasyonu · 7 eşzamanlılık · 8 idempotency ve webhook · 9 kuyruk ve outbox · 11 gözlemlenebilirlik · 12 performans · 5 TanStack Query ve React performansı · 6 render pipeline · 3 render stratejileri ve CWV | 10 gerçek zamanlı · 13 teslimat · 2'nin kalanı | OpenAPI ve Swagger · ETag · seed ayrıntıları · PDF ve e-posta şablonları · dashboard CRUD · design system cilası · i18n |
+
+**Ayrı modül olur mu?** Zorlu, alt seviye parçalar ürün kalitesinde sınırlarla `packages/` altında yazılır; ürün onları gerçekten kullandıktan sonra ayrı repo ve npm paketi olarak çıkarılır. Erken genelleme yok: önce bu ürünün ihtiyacı, sonra soyutlama.
+
+Adaylar, güçlüden zayıfa:
+
+1. Mock payment provider, kaos enjeksiyonlu (gecikme, çift webhook, bozuk imza) · dilim 8
+2. Webhook araç seti: HMAC imza ve doğrulama, timestamp ve replay koruması, retry ve backoff, DLQ · dilim 8
+3. Idempotency-Key Fastify plugin'i: saklama, yanıt tekrarı, eşzamanlı çakışma · dilim 8
+4. Envanter hold motoru: TTL ile birim tutma, Redis + PG · dilim 7
+5. PG üstünde iş kuyruğu ve outbox (`SKIP LOCKED`, görünürlük zaman aşımı, DLQ) · dilim 9
+6. Canvas seat-map renderer, React bileşeni · dilim 6
+7. Redis + Lua rate limiter (rakibi çok, lab olarak kalabilir) · dilim 12
+
+Aday paketlerin kuralı: api'ye bağımlı değil, kendi testi var, README "nasıl kurulur" diye başlar.
+
 ## Bilerek dışarıda bırakılanlar
 
 Kubernetes, DDD, CQRS/Event Sourcing, GraphQL, gRPC, micro-frontend, egzotik tip programlama.
