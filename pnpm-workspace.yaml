@@ -6,6 +6,9 @@ allowBuilds:
   esbuild: true
 
 catalog:
+  "@fastify/swagger": ^9.8.1
+  "@fastify/swagger-ui": ^6.1.1
+  openapi-types: ^12.1.3
   typescript: ^6.0.3
   "@types/node": ^24.9.2
   "drizzle-orm": ^0.45.2

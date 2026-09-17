@@ -9,13 +9,16 @@
     "test": "node --env-file=../../.env --test"
   },
   "dependencies": {
+    "@fastify/swagger": "catalog:",
+    "@fastify/swagger-ui": "catalog:",
+    "@node-rs/argon2": "catalog:",
     "@ticketing/contracts": "workspace:*",
     "@ticketing/db": "workspace:*",
     "fastify": "catalog:",
-    "zod": "catalog:",
-    "fastify-type-provider-zod": "catalog:",
     "fastify-plugin": "catalog:",
-    "@node-rs/argon2": "catalog:"
+    "fastify-type-provider-zod": "catalog:",
+    "openapi-types": "catalog:",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@ticketing/tsconfig": "workspace:*",

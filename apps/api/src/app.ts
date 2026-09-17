@@ -12,6 +12,7 @@ import {
 import { randomUUID } from "node:crypto";
 import dbPlugin from "./plugins/db.ts";
 import errorsPlugin from "./plugins/errors.ts";
+import openapiPlugin from "./plugins/openapi.ts";
 import authRoutes from "./routes/auth.ts";
 
 export interface AppOptions {
@@ -40,6 +41,7 @@ export async function createApp(opts: AppOptions) {
   });
 
   await app.register(errorsPlugin);
+  await app.register(openapiPlugin);
   await app.register(dbPlugin, { connectionString: opts.connectionString });
 
   await app.register(authRoutes, { prefix: "/auth" });

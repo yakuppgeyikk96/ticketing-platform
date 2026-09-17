@@ -13,8 +13,13 @@ export const registerBodySchema = z.object({
   email: z
     .email()
     .max(254)
+    .meta({ example: "yakup@example.com" })
     .transform((v) => v.trim().toLowerCase()),
-  password: z.string().min(8).max(128),
+  password: z
+    .string()
+    .min(8)
+    .max(128)
+    .meta({ example: "correct horse battery" }),
 });
 
 export type RegisterBody = z.infer<typeof registerBodySchema>;
@@ -39,3 +44,10 @@ export const problemSchema = z.object({
 });
 
 export type ProblemBody = z.infer<typeof problemSchema>;
+
+// Named components in the generated OpenAPI document. This is zod's own
+// registry; the contracts package still knows nothing about the framework.
+z.globalRegistry.add(problemSchema, { id: "Problem" });
+z.globalRegistry.add(registerBodySchema, { id: "RegisterBody" });
+z.globalRegistry.add(registerResponseSchema, { id: "RegisterResponse" });
+z.globalRegistry.add(healthResponseSchema, { id: "HealthResponse" });
