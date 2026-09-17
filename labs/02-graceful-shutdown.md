@@ -32,6 +32,16 @@ In-flight requests finished with their real status. The 19 requests that arrived
 
 The single cut request is the keep-alive race: Fastify destroys idle keep-alive sockets on close, and one socket was judged idle at the instant k6 wrote the next request into it. A load balancer draining the instance before the signal, or sending `Connection: close` during drain, removes this.
 
+## Server-side confirmation
+
+k6 only sees outcomes; it cannot tag "the requests that were in flight at the signal". A temporary probe in the server (an `onRequest`/`onResponse` counter plus a log line in `onClose`) made it direct:
+
+- at `SIGTERM`, 20 requests were in flight (one per virtual user);
+- all 20 completed **after** the signal, every one with `201`;
+- only then did `onClose` run and the pool close, then `server closed`.
+
+So the drain order is exactly: stop accepting → finish in-flight → close resources → exit.
+
 ## What "connection refused" means here
 
 Both runs show ~470k refused: after the process exits nobody listens on the port, and k6 keeps hammering for the remaining 8 s. In production a load balancer stops routing to the instance before `SIGTERM` (readiness probe fails, then the signal), so clients never see refused either. Our handler cannot fix that part; the platform does.
