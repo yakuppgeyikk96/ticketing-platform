@@ -10,6 +10,7 @@ import {
   hasZodFastifySchemaValidationErrors,
   isResponseSerializationError,
 } from "fastify-type-provider-zod";
+import { toLoggableError } from "@ticketing/db";
 import { AppError } from "../errors.ts";
 
 // RFC 9457 `type` is a URI. Relative is allowed; we keep it short and stable.
@@ -85,7 +86,7 @@ const errorsPlugin: FastifyPluginCallback = (app, _opts, done) => {
     }
 
     // 5. Everything else is unexpected: log the real error, hide it from the client.
-    req.log.error({ err }, "unhandled error");
+    req.log.error({ err: toLoggableError(err) }, "unhandled error");
     return sendProblem(req, reply, {
       type: problemType("internal"),
       title: "Internal Server Error",
