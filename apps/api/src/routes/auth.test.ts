@@ -10,7 +10,11 @@ if (!connectionString) throw new Error("DATABASE_URL is not set");
 // One app for the whole file: opening a pool per test is slow and pointless.
 let app: Awaited<ReturnType<typeof createApp>>;
 before(async () => {
-  app = await createApp({ connectionString, logger: false });
+  app = await createApp({
+    connectionString,
+    logger: false,
+    secureCookies: false,
+  });
 });
 after(() => app.close());
 
@@ -99,4 +103,66 @@ test("unknown route returns a 404 problem", async () => {
     /^application\/problem\+json/,
   );
   assert.equal(problem(res.json()).type, "/problems/not-found");
+});
+
+// Register + login helper: every login test needs a real account.
+async function registerAndLogin(email: string, password: string) {
+  const reg = await app.inject({
+    method: "POST",
+    url: "/auth/register",
+    payload: { email, password },
+  });
+  assert.equal(reg.statusCode, 201);
+  return app.inject({
+    method: "POST",
+    url: "/auth/login",
+    payload: { email, password },
+  });
+}
+
+test("POST /auth/login sets an HttpOnly session cookie and returns the user", async () => {
+  const email = uniqueEmail();
+  const res = await registerAndLogin(email, "correct horse battery");
+
+  assert.equal(res.statusCode, 200);
+
+  const body: unknown = res.json();
+  assert.ok(body && typeof body === "object");
+  assert.ok("id" in body && typeof body.id === "string");
+  assert.ok("email" in body && body.email === email.toLowerCase());
+  assert.ok("fullName" in body && body.fullName === null);
+
+  // set-cookie may be a string or an array; normalise to one string.
+  const cookie = String(res.headers["set-cookie"]);
+  assert.match(cookie, /^sid=[A-Za-z0-9_-]+;/);
+  assert.match(cookie, /HttpOnly/);
+  assert.match(cookie, /SameSite=Lax/);
+  assert.doesNotMatch(cookie, /Secure/, "secureCookies is false in tests");
+});
+
+test("POST /auth/login rejects a wrong password with the same problem type as an unknown email", async () => {
+  const email = uniqueEmail();
+  const reg = await app.inject({
+    method: "POST",
+    url: "/auth/register",
+    payload: { email, password: "correct horse battery" },
+  });
+  assert.equal(reg.statusCode, 201);
+
+  const wrongPassword = await app.inject({
+    method: "POST",
+    url: "/auth/login",
+    payload: { email, password: "wrong horse battery" },
+  });
+  const unknownEmail = await app.inject({
+    method: "POST",
+    url: "/auth/login",
+    payload: { email: uniqueEmail(), password: "correct horse battery" },
+  });
+
+  for (const res of [wrongPassword, unknownEmail]) {
+    assert.equal(res.statusCode, 401);
+    assert.equal(problem(res.json()).type, "/problems/invalid-credentials");
+    assert.equal(res.headers["set-cookie"], undefined, "no cookie on failure");
+  }
 });

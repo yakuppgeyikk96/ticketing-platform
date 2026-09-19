@@ -1,14 +1,24 @@
 import {
+  loginBodySchema,
+  loginResponseSchema,
   problemSchema,
   registerBodySchema,
   registerResponseSchema,
 } from "@ticketing/contracts";
 import type { FastifyPluginCallbackZod } from "fastify-type-provider-zod";
-import { hash } from "@node-rs/argon2";
+import { hash, verify } from "@node-rs/argon2";
 import { isUniqueViolation, users } from "@ticketing/db";
-import { ConflictError } from "../errors.ts";
+import { ConflictError, UnauthorizedError } from "../errors.ts";
+import { and, isNull, sql } from "drizzle-orm";
+import { createSession, SESSION_TTL_MS } from "../auth/sessions.ts";
 
-const authRoutes: FastifyPluginCallbackZod = (fastify) => {
+// Verified against when the email is unknown, so both paths cost one argon2 run
+const DUMMY_HASH = await hash("dummy-password");
+
+const authRoutes: FastifyPluginCallbackZod<{ secureCookies: boolean }> = (
+  fastify,
+  opts,
+) => {
   fastify.post(
     "/register",
     {
@@ -57,6 +67,62 @@ const authRoutes: FastifyPluginCallbackZod = (fastify) => {
 
         throw err;
       }
+    },
+  );
+
+  fastify.post(
+    "/login",
+    {
+      schema: {
+        body: loginBodySchema,
+        response: { 200: loginResponseSchema, 401: problemSchema },
+      },
+    },
+    async (request, reply) => {
+      const { email, password } = request.body;
+
+      const [user] = await fastify.db
+        .select({
+          id: users.id,
+          email: users.email,
+          fullName: users.fullName,
+          passwordHash: users.passwordHash,
+        })
+        .from(users)
+        .where(
+          and(sql`lower(${users.email}) = ${email}`, isNull(users.deletedAt)),
+        )
+        .limit(1);
+
+      // Always run argon2: unknown email, deleted user and OIDC-only user all
+      // take the dummy path and cost the same as a real check.
+      const ok = await verify(user?.passwordHash ?? DUMMY_HASH, password);
+      if (!user || !ok) {
+        throw new UnauthorizedError(
+          "invalid-credentials",
+          "Invalid email or password",
+        );
+      }
+
+      const token = await createSession(fastify.db, {
+        userId: user.id,
+        userAgent: request.headers["user-agent"] ?? null,
+        ip: request.ip,
+      });
+
+      void reply.setCookie("sid", token, {
+        httpOnly: true,
+        secure: opts.secureCookies,
+        sameSite: "lax",
+        path: "/",
+        maxAge: SESSION_TTL_MS / 1000,
+      });
+
+      return {
+        id: user.id,
+        email: user.email,
+        fullName: user.fullName,
+      };
     },
   );
 };

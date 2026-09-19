@@ -7,7 +7,11 @@ const connectionString = process.env.DATABASE_URL;
 if (!connectionString) throw new Error("DATABASE_URL is not set");
 
 test("GET /health returns ok with version", async (t) => {
-  const app = await createApp({ connectionString, logger: false });
+  const app = await createApp({
+    connectionString,
+    logger: false,
+    secureCookies: false,
+  });
   t.after(() => app.close());
 
   const res = await app.inject({ method: "GET", url: "/health" });
@@ -17,7 +21,11 @@ test("GET /health returns ok with version", async (t) => {
 });
 
 test("GET /health answers 304 when If-None-Match carries the current ETag", async (t) => {
-  const app = await createApp({ connectionString, logger: false });
+  const app = await createApp({
+    connectionString,
+    logger: false,
+    secureCookies: false,
+  });
   t.after(() => app.close());
 
   const first = await app.inject({ method: "GET", url: "/health" });
@@ -49,7 +57,11 @@ const openapiDocSchema = z.object({
 });
 
 test("GET /docs/json serves the OpenAPI document generated from zod schemas", async (t) => {
-  const app = await createApp({ connectionString, logger: false });
+  const app = await createApp({
+    connectionString,
+    logger: false,
+    secureCookies: false,
+  });
   t.after(() => app.close());
 
   const res = await app.inject({ method: "GET", url: "/docs/json" });

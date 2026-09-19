@@ -19,7 +19,9 @@
     "fastify-type-provider-zod": "catalog:",
     "openapi-types": "catalog:",
     "zod": "catalog:",
-    "@fastify/etag": "catalog:"
+    "@fastify/etag": "catalog:",
+    "drizzle-orm": "catalog:",
+    "@fastify/cookie": "catalog:"
   },
   "devDependencies": {
     "@ticketing/tsconfig": "workspace:*",

@@ -15,11 +15,13 @@ import errorsPlugin from "./plugins/errors.ts";
 import openapiPlugin from "./plugins/openapi.ts";
 import authRoutes from "./routes/auth.ts";
 import fastifyEtag from "@fastify/etag";
+import fastifyCookie from "@fastify/cookie";
 
 export interface AppOptions {
   connectionString: string;
   // Same type Fastify accepts: false, true, or pino options.
   logger: NonNullable<FastifyServerOptions["logger"]>;
+  secureCookies: boolean;
 }
 
 export async function createApp(opts: AppOptions) {
@@ -42,11 +44,15 @@ export async function createApp(opts: AppOptions) {
   });
 
   await app.register(errorsPlugin);
+  await app.register(fastifyCookie);
   await app.register(fastifyEtag);
   await app.register(openapiPlugin);
   await app.register(dbPlugin, { connectionString: opts.connectionString });
 
-  await app.register(authRoutes, { prefix: "/auth" });
+  await app.register(authRoutes, {
+    prefix: "/auth",
+    secureCookies: opts.secureCookies,
+  });
 
   app
     .withTypeProvider<ZodTypeProvider>()

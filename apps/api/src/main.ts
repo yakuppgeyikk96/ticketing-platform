@@ -9,6 +9,7 @@ let shuttingDown = false;
 
 const app = await createApp({
   connectionString,
+  secureCookies: isProduction,
   logger: {
     level: process.env.LOG_LEVEL ?? (isProduction ? "info" : "debug"),
     // Paths pino replaces with "[Redacted]" before writing.
