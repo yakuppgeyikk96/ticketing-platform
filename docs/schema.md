@@ -64,3 +64,31 @@ Which users act on behalf of which organization, and with what role.
 Primary key is `(user_id, organization_id)`: one membership per person per organization, no surrogate id.
 
 **Invariant not expressible in the schema:** every organization has at least one owner. A CHECK constraint sees one row only. Enforced in the application inside a transaction: creating an organization inserts the creator as owner in the same transaction; demoting or removing an owner first locks the organization row, counts owners, and refuses if this is the last one (slice 7). Per-organization custom roles are deferred; if needed they arrive via expand/contract.
+
+## Sessions
+
+### sessions
+
+One row per login. The browser holds only a random id in an `HttpOnly` cookie; the table holds its hash. See `auth.md` for why sessions rather than JWT.
+
+| column       | type        | constraints                             | note                                             |
+| ------------ | ----------- | --------------------------------------- | ------------------------------------------------ |
+| id           | uuid        | pk, default uuidv7()                    | row identity; unrelated to the cookie value      |
+| token_hash   | text        | not null, unique index                  | SHA-256 of the cookie value                      |
+| user_id      | uuid        | fk users(id) `ON DELETE CASCADE`, index |                                                  |
+| created_at   | timestamptz | not null, default now()                 |                                                  |
+| expires_at   | timestamptz | not null                                | absolute end, e.g. 30 days                       |
+| last_seen_at | timestamptz | not null, default now()                 | inactivity; updated at most once a minute        |
+| revoked_at   | timestamptz | nullable                                | logout / "log out everywhere"; null means active |
+| user_agent   | text        | nullable                                | for the "my sessions" screen                     |
+| ip           | inet        | nullable                                | same screen; `inet` is PostgreSQL's address type |
+
+Decisions:
+
+- **Hash the id, but with SHA-256, not argon2.** A leaked table must not hand out valid cookies, same reasoning as password hashes. But the input is 32 random bytes, not a human choice: there is nothing to brute-force, so a slow hash buys nothing and would run on every request. Fast hash, no salt.
+- **`ON DELETE CASCADE`**, unlike `organization_members` (`NO ACTION`). A session cannot meaningfully exist without its user; a membership can leave an organization ownerless, so there the database should refuse. Account deletion is soft, so in practice revocation happens via `revoked_at` in the same transaction that sets `users.deleted_at`; the cascade is the backstop for a real `DELETE`.
+- **Index on `user_id`.** A foreign key does not create an index in PostgreSQL. "Log out everywhere" and "sessions of user X" need it.
+- **`last_seen_at` is written at most once per minute.** Every UPDATE in PostgreSQL writes a new row version (MVCC) and leaves a dead one for VACUUM; turning every GET into an UPDATE on the hottest table is how autovacuum falls behind. Minute precision is enough for inactivity checks.
+- **Convention exception:** no `updated_at` here; `last_seen_at` is the only mutable timestamp and already says when the row was last touched.
+
+The per-request lookup: `where token_hash = $1 and revoked_at is null and expires_at > now()`, joined with `users` where `deleted_at is null`. The unique index finds the row; the other predicates are checked on that one row.

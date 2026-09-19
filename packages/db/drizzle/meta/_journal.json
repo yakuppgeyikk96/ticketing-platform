@@ -15,6 +15,13 @@
       "when": 1789323654527,
       "tag": "0001_cloudy_nitro",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1789828402428,
+      "tag": "0002_elite_romulus",
+      "breakpoints": true
     }
   ]
 }

@@ -7,6 +7,8 @@ import {
   uniqueIndex,
   primaryKey,
   check,
+  inet,
+  index,
 } from "drizzle-orm/pg-core";
 
 const timestamps = {
@@ -63,5 +65,32 @@ export const organizationMembers = pgTable(
       "organization_members_role_check",
       sql`${t.role} in ('owner', 'admin', 'staff')`,
     ),
+  ],
+);
+
+export const sessions = pgTable(
+  "sessions",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`uuidv7()`),
+    tokenHash: text("token_hash").notNull(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    lastSeenAt: timestamp("last_seen_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    revokedAt: timestamp("revoked_at", { withTimezone: true }),
+    userAgent: text("user_agent"),
+    ip: inet("ip"),
+  },
+  (t) => [
+    uniqueIndex("sessions_token_hash_key").on(t.tokenHash),
+    index("sessions_user_id_idx").on(t.userId),
   ],
 );
