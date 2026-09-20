@@ -67,3 +67,5 @@ z.globalRegistry.add(registerResponseSchema, { id: "RegisterResponse" });
 z.globalRegistry.add(healthResponseSchema, { id: "HealthResponse" });
 z.globalRegistry.add(loginBodySchema, { id: "LoginBody" });
 z.globalRegistry.add(currentUserSchema, { id: "CurrentUser" });
+
+export * from "./slug/index.ts";
