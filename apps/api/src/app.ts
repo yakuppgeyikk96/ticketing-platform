@@ -17,6 +17,7 @@ import sessionPlugin from "./plugins/session.ts";
 import authRoutes from "./routes/auth.ts";
 import fastifyEtag from "@fastify/etag";
 import fastifyCookie from "@fastify/cookie";
+import { organizationsRoutes } from "./routes/organizations.ts";
 
 export interface AppOptions {
   connectionString: string;
@@ -54,6 +55,10 @@ export async function createApp(opts: AppOptions) {
   await app.register(authRoutes, {
     prefix: "/auth",
     secureCookies: opts.secureCookies,
+  });
+
+  await app.register(organizationsRoutes, {
+    prefix: "/organizations",
   });
 
   app
