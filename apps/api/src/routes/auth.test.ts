@@ -166,3 +166,39 @@ test("POST /auth/login rejects a wrong password with the same problem type as an
     assert.equal(res.headers["set-cookie"], undefined, "no cookie on failure");
   }
 });
+
+// Pull the bare "sid=<token>" pair out of a Set-Cookie header so it can be sent back.
+function sessionCookie(res: { headers: Record<string, unknown> }): string {
+  const match = /^(sid=[^;]+)/.exec(String(res.headers["set-cookie"]));
+  assert.ok(match?.[1], "login must set the sid cookie");
+  return match[1];
+}
+
+test("GET /auth/me returns the logged-in user when the session cookie is sent", async () => {
+  const email = uniqueEmail();
+  const login = await registerAndLogin(email, "correct horse battery");
+  assert.equal(login.statusCode, 200);
+
+  const me = await app.inject({
+    method: "GET",
+    url: "/auth/me",
+    headers: { cookie: sessionCookie(login) },
+  });
+
+  assert.equal(me.statusCode, 200);
+  assert.deepEqual(me.json(), login.json());
+});
+
+test("GET /auth/me is 401 without a cookie and with an unknown token", async () => {
+  const noCookie = await app.inject({ method: "GET", url: "/auth/me" });
+  const bogus = await app.inject({
+    method: "GET",
+    url: "/auth/me",
+    headers: { cookie: "sid=not-a-real-token" },
+  });
+
+  for (const res of [noCookie, bogus]) {
+    assert.equal(res.statusCode, 401);
+    assert.equal(problem(res.json()).type, "/problems/unauthenticated");
+  }
+});

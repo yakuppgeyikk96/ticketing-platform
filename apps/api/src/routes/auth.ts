@@ -1,6 +1,6 @@
 import {
   loginBodySchema,
-  loginResponseSchema,
+  currentUserSchema,
   problemSchema,
   registerBodySchema,
   registerResponseSchema,
@@ -11,6 +11,8 @@ import { isUniqueViolation, users } from "@ticketing/db";
 import { ConflictError, UnauthorizedError } from "../errors.ts";
 import { and, isNull, sql } from "drizzle-orm";
 import { createSession, SESSION_TTL_MS } from "../auth/sessions.ts";
+import { SESSION_COOKIE } from "../plugins/session.ts";
+import { requireAuth } from "../auth/require-auth.ts";
 
 // Verified against when the email is unknown, so both paths cost one argon2 run
 const DUMMY_HASH = await hash("dummy-password");
@@ -75,7 +77,7 @@ const authRoutes: FastifyPluginCallbackZod<{ secureCookies: boolean }> = (
     {
       schema: {
         body: loginBodySchema,
-        response: { 200: loginResponseSchema, 401: problemSchema },
+        response: { 200: currentUserSchema, 401: problemSchema },
       },
     },
     async (request, reply) => {
@@ -110,7 +112,7 @@ const authRoutes: FastifyPluginCallbackZod<{ secureCookies: boolean }> = (
         ip: request.ip,
       });
 
-      void reply.setCookie("sid", token, {
+      void reply.setCookie(SESSION_COOKIE, token, {
         httpOnly: true,
         secure: opts.secureCookies,
         sameSite: "lax",
@@ -123,6 +125,18 @@ const authRoutes: FastifyPluginCallbackZod<{ secureCookies: boolean }> = (
         email: user.email,
         fullName: user.fullName,
       };
+    },
+  );
+
+  fastify.get(
+    "/me",
+    {
+      onRequest: requireAuth,
+      schema: { response: { 200: currentUserSchema, 401: problemSchema } },
+    },
+    (request) => {
+      if (!request.user) throw new Error("unreachable: requireAuth passed");
+      return request.user;
     },
   );
 };

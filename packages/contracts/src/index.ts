@@ -53,7 +53,7 @@ export const loginBodySchema = z.object({
   password: z.string().min(1).max(128),
 });
 
-export const loginResponseSchema = z.object({
+export const currentUserSchema = z.object({
   id: z.uuid(),
   email: z.email(),
   fullName: z.string().nullable(),
@@ -66,4 +66,4 @@ z.globalRegistry.add(registerBodySchema, { id: "RegisterBody" });
 z.globalRegistry.add(registerResponseSchema, { id: "RegisterResponse" });
 z.globalRegistry.add(healthResponseSchema, { id: "HealthResponse" });
 z.globalRegistry.add(loginBodySchema, { id: "LoginBody" });
-z.globalRegistry.add(loginResponseSchema, { id: "LoginResponse" });
+z.globalRegistry.add(currentUserSchema, { id: "CurrentUser" });
