@@ -35,6 +35,15 @@ A stolen token has no remedy; CSRF has cheap, browser-backed remedies. The cooki
 
 The model carries over. A native app has no cookie jar, so it sends the same session id as `Authorization: Bearer <session-id>` and keeps it in the platform's secure storage (Keychain / Keystore). The server reads the id from the cookie first, then from the header. CSRF and XSS do not apply to a native client, so the bearer header is safe there. OIDC on mobile is the same authorization-code + PKCE flow. No switch to JWT is needed; the revocation requirement is the same on every client.
 
+## Where errors are thrown
+
+- Service functions (`apps/api/src/auth/service.ts`) throw business outcomes: email taken, invalid credentials. They know the rule, so they raise it.
+- Hooks (`requireAuth`) throw gate errors. Handlers throw nothing business-related; only `unreachable` guards.
+- Programmer errors are plain `Error` (become 500, logged, hidden from the client); user-facing outcomes are `AppError` subclasses.
+- One place converts: the errors plugin, into RFC 9457 bodies.
+
+Known debt: `AppError` carries the HTTP status, so services indirectly know HTTP. The clean form is domain error classes (`EmailTakenError`) mapped to status/type in the error handler. Trigger to do it: a service called from outside HTTP (worker, CLI), or the mapping growing past a handful of cases. Exceptions over a Result type is also a choice: less noise with Fastify's error handler; revisit if services start nesting.
+
 ## Next steps
 
 1. `sessions` table: id (random, hashed at rest), user_id, created_at, expires_at, last_seen_at, user agent / ip for the "my sessions" screen, revoked_at.
