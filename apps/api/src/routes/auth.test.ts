@@ -202,3 +202,67 @@ test("GET /auth/me is 401 without a cookie and with an unknown token", async () 
     assert.equal(problem(res.json()).type, "/problems/unauthenticated");
   }
 });
+
+test("POST /auth/logout revokes the session and clears the cookie", async () => {
+  const login = await registerAndLogin(uniqueEmail(), "correct horse battery");
+  const cookie = sessionCookie(login);
+
+  const logout = await app.inject({
+    method: "POST",
+    url: "/auth/logout",
+    headers: { cookie },
+  });
+  assert.equal(logout.statusCode, 204);
+  assert.equal(logout.body, "");
+  assert.match(
+    String(logout.headers["set-cookie"]),
+    /^sid=;.*(Max-Age=0|Expires=Thu, 01 Jan 1970)/,
+  );
+
+  const me = await app.inject({
+    method: "GET",
+    url: "/auth/me",
+    headers: { cookie },
+  });
+  assert.equal(me.statusCode, 401);
+
+  // A revoked session no longer authenticates, so a second logout is 401, not 204.
+  const again = await app.inject({
+    method: "POST",
+    url: "/auth/logout",
+    headers: { cookie },
+  });
+  assert.equal(again.statusCode, 401);
+});
+
+test("POST /auth/logout-all revokes every session of the user", async () => {
+  const email = uniqueEmail();
+  const first = await registerAndLogin(email, "correct horse battery");
+  const second = await app.inject({
+    method: "POST",
+    url: "/auth/login",
+    payload: { email, password: "correct horse battery" },
+  });
+  const cookies = [sessionCookie(first), sessionCookie(second)];
+  assert.notEqual(cookies[0], cookies[1], "each login is its own session");
+
+  const res = await app.inject({
+    method: "POST",
+    url: "/auth/logout-all",
+    headers: { cookie: cookies[0] },
+  });
+  assert.equal(res.statusCode, 204);
+
+  for (const cookie of cookies) {
+    const me = await app.inject({
+      method: "GET",
+      url: "/auth/me",
+      headers: { cookie },
+    });
+    assert.equal(
+      me.statusCode,
+      401,
+      `session ${cookie.slice(0, 12)}... must be revoked`,
+    );
+  }
+});

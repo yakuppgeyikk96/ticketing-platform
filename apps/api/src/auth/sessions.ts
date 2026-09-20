@@ -1,5 +1,5 @@
 import { sessions, users, type Db } from "@ticketing/db";
-import { and, eq, gt, isNull } from "drizzle-orm";
+import { and, eq, gt, isNull, ne } from "drizzle-orm";
 import { createHash, randomBytes } from "node:crypto";
 
 export interface CreateSessionInput {
@@ -67,4 +67,30 @@ export async function findSessionByToken(
     .limit(1);
 
   return row ?? null;
+}
+
+// Revoke rather than delete: the row stays for "my sessions" history and
+// audit; the WHERE guard makes a repeated logout a no-op.
+export async function revokeSession(db: Db, sessionId: string): Promise<void> {
+  await db
+    .update(sessions)
+    .set({
+      revokedAt: new Date(),
+    })
+    .where(and(eq(sessions.id, sessionId), isNull(sessions.revokedAt)));
+}
+
+// "Log out everywhere". Callers that want to keep the current session
+// (password change) pass its id in `except`.
+export async function revokeUserSessions(
+  db: Db,
+  userId: string,
+  options: { except?: string } = {},
+): Promise<void> {
+  const conditions = [eq(sessions.userId, userId), isNull(sessions.revokedAt)];
+  if (options.except) conditions.push(ne(sessions.id, options.except));
+  await db
+    .update(sessions)
+    .set({ revokedAt: new Date() })
+    .where(and(...conditions));
 }

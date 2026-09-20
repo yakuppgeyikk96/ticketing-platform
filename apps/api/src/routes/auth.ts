@@ -1,3 +1,4 @@
+import { z } from "zod";
 import {
   loginBodySchema,
   currentUserSchema,
@@ -10,7 +11,12 @@ import { hash, verify } from "@node-rs/argon2";
 import { isUniqueViolation, users } from "@ticketing/db";
 import { ConflictError, UnauthorizedError } from "../errors.ts";
 import { and, isNull, sql } from "drizzle-orm";
-import { createSession, SESSION_TTL_MS } from "../auth/sessions.ts";
+import {
+  createSession,
+  revokeSession,
+  revokeUserSessions,
+  SESSION_TTL_MS,
+} from "../auth/sessions.ts";
 import { SESSION_COOKIE } from "../plugins/session.ts";
 import { requireAuth } from "../auth/require-auth.ts";
 
@@ -137,6 +143,38 @@ const authRoutes: FastifyPluginCallbackZod<{ secureCookies: boolean }> = (
     (request) => {
       if (!request.user) throw new Error("unreachable: requireAuth passed");
       return request.user;
+    },
+  );
+
+  fastify.post(
+    "/logout",
+    {
+      onRequest: requireAuth,
+      schema: { response: { 204: z.undefined(), 401: problemSchema } },
+    },
+    async (request, reply) => {
+      if (!request.sessionId)
+        throw new Error("unreachable: requireAuth passed");
+
+      await revokeSession(fastify.db, request.sessionId);
+      void reply.clearCookie(SESSION_COOKIE, { path: "/" });
+      return reply.code(204).send();
+    },
+  );
+
+  fastify.post(
+    "/logout-all",
+    {
+      onRequest: requireAuth,
+      schema: { response: { 204: z.undefined(), 401: problemSchema } },
+    },
+    async (request, reply) => {
+      if (!request.user || !request.sessionId)
+        throw new Error("unreachable: requireAuth passed");
+
+      await revokeUserSessions(fastify.db, request.user.id);
+      void reply.clearCookie(SESSION_COOKIE, { path: "/" });
+      return reply.code(204).send();
     },
   );
 };
