@@ -7,10 +7,6 @@ import {
   registerResponseSchema,
 } from "@ticketing/contracts";
 import type { FastifyPluginCallbackZod } from "fastify-type-provider-zod";
-import { hash, verify } from "@node-rs/argon2";
-import { isUniqueViolation, users } from "@ticketing/db";
-import { ConflictError, UnauthorizedError } from "../errors.ts";
-import { and, isNull, sql } from "drizzle-orm";
 import {
   createSession,
   revokeSession,
@@ -19,9 +15,7 @@ import {
 } from "../auth/sessions.ts";
 import { SESSION_COOKIE } from "../plugins/session.ts";
 import { requireAuth } from "../auth/require-auth.ts";
-
-// Verified against when the email is unknown, so both paths cost one argon2 run
-const DUMMY_HASH = await hash("dummy-password");
+import { authenticate, registerUser } from "../auth/service.ts";
 
 const authRoutes: FastifyPluginCallbackZod<{ secureCookies: boolean }> = (
   fastify,
@@ -41,40 +35,15 @@ const authRoutes: FastifyPluginCallbackZod<{ secureCookies: boolean }> = (
     async (request, reply) => {
       const { email, password } = request.body;
 
-      const passwordHash = await hash(password);
+      const user = await registerUser(fastify.db, {
+        email,
+        password,
+      });
 
-      try {
-        const [user] = await fastify.db
-          .insert(users)
-          .values({
-            email,
-            passwordHash,
-          })
-          .returning({
-            id: users.id,
-            email: users.email,
-            createdAt: users.createdAt,
-          });
-
-        if (!user) {
-          throw new Error("insert return no row");
-        }
-
-        return await reply.code(201).send({
-          ...user,
-          createdAt: user.createdAt.toISOString(),
-        });
-      } catch (err) {
-        if (isUniqueViolation(err, "users_email_lower_idx")) {
-          throw new ConflictError(
-            "email-taken",
-            "Email already registered",
-            "An account with this email already exists",
-          );
-        }
-
-        throw err;
-      }
+      return await reply.code(201).send({
+        ...user,
+        createdAt: user.createdAt.toISOString(),
+      });
     },
   );
 
@@ -89,28 +58,7 @@ const authRoutes: FastifyPluginCallbackZod<{ secureCookies: boolean }> = (
     async (request, reply) => {
       const { email, password } = request.body;
 
-      const [user] = await fastify.db
-        .select({
-          id: users.id,
-          email: users.email,
-          fullName: users.fullName,
-          passwordHash: users.passwordHash,
-        })
-        .from(users)
-        .where(
-          and(sql`lower(${users.email}) = ${email}`, isNull(users.deletedAt)),
-        )
-        .limit(1);
-
-      // Always run argon2: unknown email, deleted user and OIDC-only user all
-      // take the dummy path and cost the same as a real check.
-      const ok = await verify(user?.passwordHash ?? DUMMY_HASH, password);
-      if (!user || !ok) {
-        throw new UnauthorizedError(
-          "invalid-credentials",
-          "Invalid email or password",
-        );
-      }
+      const user = await authenticate(fastify.db, { email, password });
 
       const token = await createSession(fastify.db, {
         userId: user.id,
