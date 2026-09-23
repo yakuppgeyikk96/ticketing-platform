@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { after, before, test } from "node:test";
 import {
+  myOrganizationsResponseSchema,
   organizationSchema,
   problemSchema,
   type ProblemBody,
@@ -148,4 +149,64 @@ test("POST /organizations rejects a name that leaves no slug characters", async 
 
   assert.equal(res.statusCode, 400);
   assert.equal(problem(res.json()).type, "/problems/invalid-name");
+});
+
+test("GET /organizations lists only the caller's organizations, with role, ordered by name", async () => {
+  const alice = await loginCookie();
+  const bob = await loginCookie();
+
+  // Created out of order on purpose; the list must sort by name.
+  const suffix = randomUUID().slice(0, 8);
+  const names = [`Zeytin Sahne ${suffix}`, `Anadolu Tiyatro ${suffix}`];
+  for (const name of names) {
+    const res = await app.inject({
+      method: "POST",
+      url: "/organizations",
+      headers: { cookie: alice },
+      payload: { name },
+    });
+    assert.equal(res.statusCode, 201);
+  }
+  const bobsOrg = await app.inject({
+    method: "POST",
+    url: "/organizations",
+    headers: { cookie: bob },
+    payload: { name: uniqueName() },
+  });
+  assert.equal(bobsOrg.statusCode, 201);
+
+  const res = await app.inject({
+    method: "GET",
+    url: "/organizations",
+    headers: { cookie: alice },
+  });
+
+  assert.equal(res.statusCode, 200);
+  const list = myOrganizationsResponseSchema.parse(res.json());
+  assert.deepEqual(
+    list.map((m) => m.name),
+    [`Anadolu Tiyatro ${suffix}`, `Zeytin Sahne ${suffix}`],
+  );
+  assert.ok(list.every((m) => m.role === "owner"));
+  assert.ok(
+    !list.some((m) => m.id === organizationSchema.parse(bobsOrg.json()).id),
+  );
+});
+
+test("GET /organizations is an empty list for a user without memberships", async () => {
+  const res = await app.inject({
+    method: "GET",
+    url: "/organizations",
+    headers: { cookie: await loginCookie() },
+  });
+
+  assert.equal(res.statusCode, 200);
+  assert.deepEqual(res.json(), []);
+});
+
+test("GET /organizations is 401 without a session cookie", async () => {
+  const res = await app.inject({ method: "GET", url: "/organizations" });
+
+  assert.equal(res.statusCode, 401);
+  assert.equal(problem(res.json()).type, "/problems/unauthenticated");
 });

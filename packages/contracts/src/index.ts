@@ -71,6 +71,17 @@ export const organizationSchema = z.object({
   slug: z.string(),
 });
 
+export const organizationMembershipSchema = z.object({
+  id: z.uuid(),
+  name: z.string(),
+  slug: z.string(),
+  role: z.enum(["owner", "admin", "staff"]),
+});
+
+export const myOrganizationsResponseSchema = z.array(
+  organizationMembershipSchema,
+);
+
 // Named components in the generated OpenAPI document. This is zod's own
 // registry; the contracts package still knows nothing about the framework.
 z.globalRegistry.add(problemSchema, { id: "Problem" });
@@ -83,5 +94,8 @@ z.globalRegistry.add(createOrganizationBodySchema, {
   id: "CreateOrganizationBody",
 });
 z.globalRegistry.add(organizationSchema, { id: "Organization" });
+z.globalRegistry.add(organizationMembershipSchema, {
+  id: "OrganizationMembership",
+});
 
 export * from "./slug/index.ts";

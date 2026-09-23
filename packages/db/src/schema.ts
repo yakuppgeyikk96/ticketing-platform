@@ -56,7 +56,7 @@ export const organizationMembers = pgTable(
     organizationId: uuid("organization_id")
       .notNull()
       .references(() => organizations.id),
-    role: text("role").notNull(),
+    role: text("role", { enum: ["owner", "admin", "staff"] }).notNull(),
     ...timestamps,
   },
   (t) => [

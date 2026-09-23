@@ -5,13 +5,22 @@ import {
   organizations,
   type Db,
 } from "@ticketing/db";
-import { eq, like, or } from "drizzle-orm";
+import { asc, eq, like, or } from "drizzle-orm";
 import { BadRequestError, ConflictError } from "../errors.ts";
 
 interface CreateOrganizationReturn {
   id: string;
   name: string;
   slug: string;
+}
+
+type MembershipRole = (typeof organizationMembers.$inferSelect)["role"];
+
+interface OrganizationMembership {
+  id: string;
+  name: string;
+  slug: string;
+  role: MembershipRole;
 }
 
 export async function findFreeSlug(db: Db, base: string): Promise<string> {
@@ -79,4 +88,24 @@ export async function createOrganization(
     }
     throw err;
   }
+}
+
+export async function listUserOrganizations(
+  db: Db,
+  userId: string,
+): Promise<OrganizationMembership[]> {
+  return await db
+    .select({
+      id: organizations.id,
+      name: organizations.name,
+      slug: organizations.slug,
+      role: organizationMembers.role,
+    })
+    .from(organizationMembers)
+    .innerJoin(
+      organizations,
+      eq(organizationMembers.organizationId, organizations.id),
+    )
+    .where(eq(organizationMembers.userId, userId))
+    .orderBy(asc(organizations.name));
 }
