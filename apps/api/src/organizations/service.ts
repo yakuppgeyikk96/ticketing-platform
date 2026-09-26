@@ -3,10 +3,13 @@ import {
   isUniqueViolation,
   organizationMembers,
   organizations,
+  users,
   type Db,
 } from "@ticketing/db";
-import { asc, eq, like, or } from "drizzle-orm";
-import { BadRequestError, ConflictError } from "../errors.ts";
+import { and, asc, eq, isNull, like, or, sql } from "drizzle-orm";
+import { BadRequestError, ConflictError, NotFoundError } from "../errors.ts";
+
+export type MemberRole = (typeof organizationMembers.$inferSelect)["role"];
 
 interface CreateOrganizationReturn {
   id: string;
@@ -14,32 +17,23 @@ interface CreateOrganizationReturn {
   slug: string;
 }
 
-type MembershipRole = (typeof organizationMembers.$inferSelect)["role"];
-
-interface OrganizationMembership {
+interface UserOrganization {
   id: string;
   name: string;
   slug: string;
-  role: MembershipRole;
+  role: MemberRole;
 }
 
-export async function findFreeSlug(db: Db, base: string): Promise<string> {
-  const rows = await db
-    .select({ slug: organizations.slug })
-    .from(organizations)
-    .where(
-      or(eq(organizations.slug, base), like(organizations.slug, base + "-%")),
-    );
+interface AddMemberInput {
+  organizationId: string;
+  email: string;
+  role: MemberRole;
+}
 
-  const taken = new Set(rows.map((r) => r.slug));
-
-  if (!taken.has(base)) return base;
-
-  let n = 2;
-
-  while (taken.has(`${base}-${n}`)) n++;
-
-  return `${base}-${n}`;
+interface AddMemberReturn {
+  userId: string;
+  email: string;
+  role: MemberRole;
 }
 
 export async function createOrganization(
@@ -90,10 +84,57 @@ export async function createOrganization(
   }
 }
 
+export async function addMember(
+  db: Db,
+  input: AddMemberInput,
+): Promise<AddMemberReturn> {
+  const [user] = await db
+    .select({ id: users.id, email: users.email })
+    .from(users)
+    .where(
+      and(sql`lower(${users.email}) = ${input.email}`, isNull(users.deletedAt)),
+    );
+
+  if (!user)
+    throw new NotFoundError("user-not-found", "No account with this email");
+
+  try {
+    const [insertedMembership] = await db
+      .insert(organizationMembers)
+      .values({
+        userId: user.id,
+        organizationId: input.organizationId,
+        role: input.role,
+      })
+      .returning({
+        userId: organizationMembers.userId,
+        role: organizationMembers.role,
+      });
+
+    if (!insertedMembership) throw new Error("error adding membership");
+
+    return {
+      userId: insertedMembership.userId,
+      email: input.email,
+      role: insertedMembership.role,
+    };
+  } catch (err) {
+    if (
+      isUniqueViolation(err, "organization_members_user_id_organization_id_pk")
+    ) {
+      throw new ConflictError(
+        "already-member",
+        "User is already a member of organization",
+      );
+    }
+    throw err;
+  }
+}
+
 export async function listUserOrganizations(
   db: Db,
   userId: string,
-): Promise<OrganizationMembership[]> {
+): Promise<UserOrganization[]> {
   return await db
     .select({
       id: organizations.id,
@@ -108,4 +149,41 @@ export async function listUserOrganizations(
     )
     .where(eq(organizationMembers.userId, userId))
     .orderBy(asc(organizations.name));
+}
+
+export async function findMembership(
+  db: Db,
+  params: { userId: string; organizationId: string },
+): Promise<{ role: MemberRole } | null> {
+  const [row] = await db
+    .select({ role: organizationMembers.role })
+    .from(organizationMembers)
+    .where(
+      and(
+        eq(organizationMembers.userId, params.userId),
+        eq(organizationMembers.organizationId, params.organizationId),
+      ),
+    )
+    .limit(1);
+
+  return row ?? null;
+}
+
+export async function findFreeSlug(db: Db, base: string): Promise<string> {
+  const rows = await db
+    .select({ slug: organizations.slug })
+    .from(organizations)
+    .where(
+      or(eq(organizations.slug, base), like(organizations.slug, base + "-%")),
+    );
+
+  const taken = new Set(rows.map((r) => r.slug));
+
+  if (!taken.has(base)) return base;
+
+  let n = 2;
+
+  while (taken.has(`${base}-${n}`)) n++;
+
+  return `${base}-${n}`;
 }

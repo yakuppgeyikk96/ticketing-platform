@@ -9,12 +9,17 @@ export const healthResponseSchema = z.object({
 
 export type HealthResponse = z.infer<typeof healthResponseSchema>;
 
+export const memberRoleSchema = z.enum(["owner", "admin", "staff"]);
+export type MemberRole = z.infer<typeof memberRoleSchema>;
+
+const emailInputSchema = z
+  .email()
+  .max(254)
+  .meta({ example: "yakup@example.com" })
+  .transform((v) => v.trim().toLowerCase());
+
 export const registerBodySchema = z.object({
-  email: z
-    .email()
-    .max(254)
-    .meta({ example: "yakup@example.com" })
-    .transform((v) => v.trim().toLowerCase()),
+  email: emailInputSchema,
   password: z
     .string()
     .min(8)
@@ -46,10 +51,7 @@ export const problemSchema = z.object({
 export type ProblemBody = z.infer<typeof problemSchema>;
 
 export const loginBodySchema = z.object({
-  email: z
-    .email()
-    .max(254)
-    .transform((v) => v.trim().toLowerCase()),
+  email: emailInputSchema,
   password: z.string().min(1).max(128),
 });
 
@@ -71,16 +73,29 @@ export const organizationSchema = z.object({
   slug: z.string(),
 });
 
-export const organizationMembershipSchema = z.object({
+export const organizationParamsSchema = z.object({
+  organizationId: z.uuid(),
+});
+
+export const userOrganizationSchema = z.object({
   id: z.uuid(),
   name: z.string(),
   slug: z.string(),
-  role: z.enum(["owner", "admin", "staff"]),
+  role: memberRoleSchema,
 });
 
-export const myOrganizationsResponseSchema = z.array(
-  organizationMembershipSchema,
-);
+export const userOrganizationsResponseSchema = z.array(userOrganizationSchema);
+
+export const memberSchema = z.object({
+  userId: z.uuid(),
+  email: z.email(),
+  role: memberRoleSchema,
+});
+
+export const addMemberBodySchema = z.object({
+  email: emailInputSchema,
+  role: memberRoleSchema,
+});
 
 // Named components in the generated OpenAPI document. This is zod's own
 // registry; the contracts package still knows nothing about the framework.
@@ -94,8 +109,14 @@ z.globalRegistry.add(createOrganizationBodySchema, {
   id: "CreateOrganizationBody",
 });
 z.globalRegistry.add(organizationSchema, { id: "Organization" });
-z.globalRegistry.add(organizationMembershipSchema, {
-  id: "OrganizationMembership",
+z.globalRegistry.add(userOrganizationSchema, {
+  id: "UserOrganization",
+});
+z.globalRegistry.add(memberSchema, {
+  id: "Member",
+});
+z.globalRegistry.add(addMemberBodySchema, {
+  id: "AddMemberBody",
 });
 
 export * from "./slug/index.ts";

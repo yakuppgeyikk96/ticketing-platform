@@ -2,7 +2,8 @@ import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { after, before, test } from "node:test";
 import {
-  myOrganizationsResponseSchema,
+  memberSchema,
+  userOrganizationsResponseSchema,
   organizationSchema,
   problemSchema,
   type ProblemBody,
@@ -35,6 +36,11 @@ function uniqueName() {
 
 // Register + login, return the bare "sid=<token>" pair.
 async function loginCookie(): Promise<string> {
+  return (await signUp()).cookie;
+}
+
+// Same, but also hand back the email so another test can add this user as a member.
+async function signUp(): Promise<{ cookie: string; email: string }> {
   const email = `Yakup+${randomUUID()}@Example.com`;
   const password = "correct horse battery";
   const reg = await app.inject({
@@ -51,7 +57,32 @@ async function loginCookie(): Promise<string> {
   assert.equal(login.statusCode, 200);
   const match = /^(sid=[^;]+)/.exec(String(login.headers["set-cookie"]));
   assert.ok(match?.[1], "login must set the sid cookie");
-  return match[1];
+  return { cookie: match[1], email: email.toLowerCase() };
+}
+
+// Create an organization as the given user, return its id.
+async function createOrg(cookie: string): Promise<string> {
+  const res = await app.inject({
+    method: "POST",
+    url: "/organizations",
+    headers: { cookie },
+    payload: { name: uniqueName() },
+  });
+  assert.equal(res.statusCode, 201);
+  return organizationSchema.parse(res.json()).id;
+}
+
+function addMember(
+  cookie: string,
+  organizationId: string,
+  payload: { email: string; role: string },
+) {
+  return app.inject({
+    method: "POST",
+    url: `/organizations/${organizationId}/members`,
+    headers: { cookie },
+    payload,
+  });
 }
 
 test("POST /organizations creates the organization with a derived slug and an owner membership", async () => {
@@ -182,7 +213,7 @@ test("GET /organizations lists only the caller's organizations, with role, order
   });
 
   assert.equal(res.statusCode, 200);
-  const list = myOrganizationsResponseSchema.parse(res.json());
+  const list = userOrganizationsResponseSchema.parse(res.json());
   assert.deepEqual(
     list.map((m) => m.name),
     [`Anadolu Tiyatro ${suffix}`, `Zeytin Sahne ${suffix}`],
@@ -209,4 +240,108 @@ test("GET /organizations is 401 without a session cookie", async () => {
 
   assert.equal(res.statusCode, 401);
   assert.equal(problem(res.json()).type, "/problems/unauthenticated");
+});
+
+test("POST /organizations/:id/members lets the owner add an existing user with a role", async () => {
+  const owner = await signUp();
+  const newcomer = await signUp();
+  const orgId = await createOrg(owner.cookie);
+
+  const res = await addMember(owner.cookie, orgId, {
+    email: newcomer.email.toUpperCase(),
+    role: "staff",
+  });
+
+  assert.equal(res.statusCode, 201);
+  const member = memberSchema.parse(res.json());
+  assert.equal(member.email, newcomer.email);
+  assert.equal(member.role, "staff");
+
+  // The newcomer now sees the organization in their own list, with that role.
+  const list = await app.inject({
+    method: "GET",
+    url: "/organizations",
+    headers: { cookie: newcomer.cookie },
+  });
+  const mine = userOrganizationsResponseSchema.parse(list.json());
+  assert.deepEqual(
+    mine.map((o) => [o.id, o.role]),
+    [[orgId, "staff"]],
+  );
+});
+
+test("POST /organizations/:id/members is 403 for staff and 404 for non-members", async () => {
+  const owner = await signUp();
+  const staff = await signUp();
+  const outsider = await signUp();
+  const orgId = await createOrg(owner.cookie);
+  const added = await addMember(owner.cookie, orgId, {
+    email: staff.email,
+    role: "staff",
+  });
+  assert.equal(added.statusCode, 201);
+
+  const byStaff = await addMember(staff.cookie, orgId, {
+    email: outsider.email,
+    role: "staff",
+  });
+  assert.equal(byStaff.statusCode, 403);
+  assert.equal(problem(byStaff.json()).type, "/problems/insufficient-role");
+
+  // A non-member must not learn the organization exists.
+  const byOutsider = await addMember(outsider.cookie, orgId, {
+    email: staff.email,
+    role: "staff",
+  });
+  assert.equal(byOutsider.statusCode, 404);
+  assert.equal(
+    problem(byOutsider.json()).type,
+    "/problems/organization-not-found",
+  );
+});
+
+test("POST /organizations/:id/members is 404 for an unknown email and 409 when already a member", async () => {
+  const owner = await signUp();
+  const orgId = await createOrg(owner.cookie);
+
+  const unknown = await addMember(owner.cookie, orgId, {
+    email: `nobody+${randomUUID()}@example.com`,
+    role: "admin",
+  });
+  assert.equal(unknown.statusCode, 404);
+  assert.equal(problem(unknown.json()).type, "/problems/user-not-found");
+
+  // The owner is already a member through the create transaction.
+  const again = await addMember(owner.cookie, orgId, {
+    email: owner.email,
+    role: "admin",
+  });
+  assert.equal(again.statusCode, 409);
+  assert.equal(problem(again.json()).type, "/problems/already-member");
+});
+
+test("POST /organizations/:id/members validates the id, the role and the session", async () => {
+  const owner = await signUp();
+  const orgId = await createOrg(owner.cookie);
+
+  const badId = await addMember(owner.cookie, "not-a-uuid", {
+    email: owner.email,
+    role: "staff",
+  });
+  assert.equal(badId.statusCode, 400);
+  assert.equal(problem(badId.json()).type, "/problems/validation");
+
+  const badRole = await addMember(owner.cookie, orgId, {
+    email: owner.email,
+    role: "king",
+  });
+  assert.equal(badRole.statusCode, 400);
+  assert.ok(problem(badRole.json()).errors?.some((e) => e.field === "role"));
+
+  const noCookie = await app.inject({
+    method: "POST",
+    url: `/organizations/${orgId}/members`,
+    payload: { email: owner.email, role: "staff" },
+  });
+  assert.equal(noCookie.statusCode, 401);
 });
