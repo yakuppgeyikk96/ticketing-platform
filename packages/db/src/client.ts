@@ -1,4 +1,4 @@
-import { drizzle } from "drizzle-orm/node-postgres";
+import { drizzle, type NodePgDatabase } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 import * as schema from "./schema.ts";
 
@@ -21,4 +21,6 @@ export function createDb(connectionString: string) {
   };
 }
 
-export type Db = ReturnType<typeof createDb>["db"];
+// The query surface only, without `$client` (the pg Pool). A transaction has the
+// same surface, so functions typed with `Db` accept both `db` and `tx`.
+export type Db = NodePgDatabase<typeof schema>;

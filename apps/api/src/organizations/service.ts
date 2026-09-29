@@ -6,8 +6,13 @@ import {
   users,
   type Db,
 } from "@ticketing/db";
-import { and, asc, eq, isNull, like, or, sql } from "drizzle-orm";
-import { BadRequestError, ConflictError, NotFoundError } from "../errors.ts";
+import { and, asc, count, eq, isNull, like, or, sql } from "drizzle-orm";
+import {
+  BadRequestError,
+  ConflictError,
+  ForbiddenError,
+  NotFoundError,
+} from "../errors.ts";
 
 export type MemberRole = (typeof organizationMembers.$inferSelect)["role"];
 
@@ -149,6 +154,96 @@ export async function listUserOrganizations(
     )
     .where(eq(organizationMembers.userId, userId))
     .orderBy(asc(organizations.name));
+}
+
+interface RemoveMemberInput {
+  organizationId: string;
+  // Who is asking. Re-checked inside the transaction: the hook's answer predates the lock.
+  actorId: string;
+  userId: string;
+}
+
+export async function removeMember(
+  db: Db,
+  input: RemoveMemberInput,
+): Promise<void> {
+  // Product rule, not a data rule: no query needed, so it stays outside the transaction.
+  if (input.actorId === input.userId) {
+    throw new ConflictError(
+      "cannot-remove-self",
+      "You cannot remove yourself",
+      "Ask another owner to remove you",
+    );
+  }
+
+  await db.transaction(async (tx) => {
+    // The organization row is the gate for every change to its membership set.
+    // FOR UPDATE makes a concurrent remove wait here until this transaction
+    // commits, so its owner count below always sees our delete.
+    const [org] = await tx
+      .select({ id: organizations.id })
+      .from(organizations)
+      .where(eq(organizations.id, input.organizationId))
+      .for("update");
+
+    if (!org) {
+      throw new NotFoundError(
+        "organization-not-found",
+        "Organization not found",
+      );
+    }
+
+    const actor = await findMembership(tx, {
+      userId: input.actorId,
+      organizationId: input.organizationId,
+    });
+
+    if (actor?.role !== "owner") {
+      throw new ForbiddenError("insufficient-role", "You need one of: owner");
+    }
+
+    const target = await findMembership(tx, {
+      userId: input.userId,
+      organizationId: input.organizationId,
+    });
+
+    if (!target) {
+      throw new NotFoundError(
+        "member-not-found",
+        "User is not a member of this organization",
+      );
+    }
+
+    if (target.role === "owner") {
+      const [owners] = await tx
+        .select({ count: count() })
+        .from(organizationMembers)
+        .where(
+          and(
+            eq(organizationMembers.organizationId, input.organizationId),
+            eq(organizationMembers.role, "owner"),
+          ),
+        );
+
+      if ((owners?.count ?? 0) <= 1) {
+        throw new ConflictError(
+          "last-owner",
+          "Organization must keep at least one owner",
+          "Make someone else an owner first",
+        );
+      }
+    }
+
+    // Tenant column is always part of the WHERE, never just the user id.
+    await tx
+      .delete(organizationMembers)
+      .where(
+        and(
+          eq(organizationMembers.userId, input.userId),
+          eq(organizationMembers.organizationId, input.organizationId),
+        ),
+      );
+  });
 }
 
 export async function findMembership(

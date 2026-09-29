@@ -97,6 +97,10 @@ export const addMemberBodySchema = z.object({
   role: memberRoleSchema,
 });
 
+export const memberParamsSchema = organizationParamsSchema.extend({
+  userId: z.uuid(),
+});
+
 // Named components in the generated OpenAPI document. This is zod's own
 // registry; the contracts package still knows nothing about the framework.
 z.globalRegistry.add(problemSchema, { id: "Problem" });

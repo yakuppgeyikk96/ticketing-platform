@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { after, before, test } from "node:test";
 import {
+  currentUserSchema,
   memberSchema,
   userOrganizationsResponseSchema,
   organizationSchema,
@@ -344,4 +345,123 @@ test("POST /organizations/:id/members validates the id, the role and the session
     payload: { email: owner.email, role: "staff" },
   });
   assert.equal(noCookie.statusCode, 401);
+});
+
+function removeMember(cookie: string, organizationId: string, userId: string) {
+  return app.inject({
+    method: "DELETE",
+    url: `/organizations/${organizationId}/members/${userId}`,
+    headers: { cookie },
+  });
+}
+
+// Add a user and return their id (the API only hands it out on the add response).
+async function addAndGetId(
+  ownerCookie: string,
+  orgId: string,
+  email: string,
+  role: "owner" | "admin" | "staff",
+): Promise<string> {
+  const res = await addMember(ownerCookie, orgId, { email, role });
+  assert.equal(res.statusCode, 201);
+  return memberSchema.parse(res.json()).userId;
+}
+
+async function ownerCount(orgId: string): Promise<number> {
+  const rows = await app.db
+    .select({ role: organizationMembers.role })
+    .from(organizationMembers)
+    .where(eq(organizationMembers.organizationId, orgId));
+  return rows.filter((r) => r.role === "owner").length;
+}
+
+test("DELETE /organizations/:id/members/:userId removes a member; a second delete is 404", async () => {
+  const owner = await signUp();
+  const staff = await signUp();
+  const orgId = await createOrg(owner.cookie);
+  const staffId = await addAndGetId(owner.cookie, orgId, staff.email, "staff");
+
+  const res = await removeMember(owner.cookie, orgId, staffId);
+  assert.equal(res.statusCode, 204);
+  assert.equal(res.body, "");
+
+  const list = await app.inject({
+    method: "GET",
+    url: "/organizations",
+    headers: { cookie: staff.cookie },
+  });
+  assert.deepEqual(list.json(), []);
+
+  const again = await removeMember(owner.cookie, orgId, staffId);
+  assert.equal(again.statusCode, 404);
+  assert.equal(problem(again.json()).type, "/problems/member-not-found");
+});
+
+test("DELETE /organizations/:id/members/:userId refuses self-removal", async () => {
+  const owner = await signUp();
+  const orgId = await createOrg(owner.cookie);
+  const me = await app.inject({
+    method: "GET",
+    url: "/auth/me",
+    headers: { cookie: owner.cookie },
+  });
+  const myId = currentUserSchema.parse(me.json()).id;
+
+  const res = await removeMember(owner.cookie, orgId, myId);
+  assert.equal(res.statusCode, 409);
+  assert.equal(problem(res.json()).type, "/problems/cannot-remove-self");
+});
+
+test("DELETE /organizations/:id/members/:userId is 403 for admins and 404 for outsiders", async () => {
+  const owner = await signUp();
+  const admin = await signUp();
+  const staff = await signUp();
+  const outsider = await signUp();
+  const orgId = await createOrg(owner.cookie);
+  const adminId = await addAndGetId(owner.cookie, orgId, admin.email, "admin");
+  const staffId = await addAndGetId(owner.cookie, orgId, staff.email, "staff");
+
+  const byAdmin = await removeMember(admin.cookie, orgId, staffId);
+  assert.equal(byAdmin.statusCode, 403);
+  assert.equal(problem(byAdmin.json()).type, "/problems/insufficient-role");
+
+  const byOutsider = await removeMember(outsider.cookie, orgId, adminId);
+  assert.equal(byOutsider.statusCode, 404);
+  assert.equal(
+    problem(byOutsider.json()).type,
+    "/problems/organization-not-found",
+  );
+
+  // A member id from another organization must not be removable through this one.
+  const otherOrgId = await createOrg(outsider.cookie);
+  const crossTenant = await removeMember(owner.cookie, otherOrgId, staffId);
+  assert.equal(crossTenant.statusCode, 404);
+});
+
+test("DELETE keeps at least one owner when two owners remove each other concurrently", async () => {
+  const ali = await signUp();
+  const ayse = await signUp();
+  const orgId = await createOrg(ali.cookie);
+  const ayseId = await addAndGetId(ali.cookie, orgId, ayse.email, "owner");
+  const aliMe = await app.inject({
+    method: "GET",
+    url: "/auth/me",
+    headers: { cookie: ali.cookie },
+  });
+  const aliId = currentUserSchema.parse(aliMe.json()).id;
+  assert.equal(await ownerCount(orgId), 2);
+
+  // Both requests start before either commits; the row lock must serialise them.
+  const [a, b] = await Promise.all([
+    removeMember(ali.cookie, orgId, ayseId),
+    removeMember(ayse.cookie, orgId, aliId),
+  ]);
+
+  const statuses = [a.statusCode, b.statusCode].sort();
+  // Exactly one wins. The loser is already removed by the time it looks:
+  // 404 if its preHandler ran after the winner committed, 403 if it got past
+  // the preHandler and the in-transaction actor check caught it after the lock.
+  assert.equal(statuses[0], 204);
+  assert.ok(statuses[1] === 403 || statuses[1] === 404, `got ${statuses[1]}`);
+  assert.equal(await ownerCount(orgId), 1);
 });
