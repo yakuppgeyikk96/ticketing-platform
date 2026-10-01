@@ -63,7 +63,11 @@ Which users act on behalf of which organization, and with what role.
 
 Primary key is `(user_id, organization_id)`: one membership per person per organization, no surrogate id.
 
-**Invariant not expressible in the schema:** every organization has at least one owner. A CHECK constraint sees one row only. Enforced in the application inside a transaction: creating an organization inserts the creator as owner in the same transaction; demoting or removing an owner first locks the organization row, counts owners, and refuses if this is the last one (slice 7). Per-organization custom roles are deferred; if needed they arrive via expand/contract.
+**Invariant not expressible in the schema:** every organization has at least one owner. A CHECK constraint sees one row only. Enforced in the application inside a transaction: creating an organization inserts the creator as owner in the same transaction; demoting or removing an owner first locks the organization row (`SELECT ... FOR UPDATE`), counts owners, and refuses if this is the last one. Measured in `labs/04-row-lock.md`. Per-organization custom roles are deferred; if needed they arrive via expand/contract.
+
+**Lock order:** a transaction that touches an organization's data locks the organization row first, before any other lock. One order for everyone makes deadlocks impossible.
+
+**The role list lives in three places** on purpose: the CHECK constraint (protects the database), Drizzle's `text("role", { enum })` (narrows the TypeScript type, no SQL), and `memberRoleSchema` in contracts (the API). Not a Postgres enum: adding a value is awkward and removing one means recreating the type.
 
 ## Sessions
 

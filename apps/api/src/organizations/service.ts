@@ -214,6 +214,9 @@ export async function removeMember(
       );
     }
 
+    // Unreachable today: actor and target are two different owners, so the count
+    // is at least 2. Kept as the data invariant for when "leave organization" or
+    // role changes arrive; see labs/04-row-lock.md.
     if (target.role === "owner") {
       const [owners] = await tx
         .select({ count: count() })
