@@ -44,11 +44,31 @@ The model carries over. A native app has no cookie jar, so it sends the same ses
 
 Known debt: `AppError` carries the HTTP status, so services indirectly know HTTP. The clean form is domain error classes (`EmailTakenError`) mapped to status/type in the error handler. Trigger to do it: a service called from outside HTTP (worker, CLI), or the mapping growing past a handful of cases. Exceptions over a Result type is also a choice: less noise with Fastify's error handler; revisit if services start nesting.
 
-## Next steps
+## Authorization inside an organization
 
-1. `sessions` table: id (random, hashed at rest), user_id, created_at, expires_at, last_seen_at, user agent / ip for the "my sessions" screen, revoked_at.
-2. `POST /auth/login`: argon2id verify with constant-time behaviour on unknown email, create session, set cookie.
-3. Session plugin: read cookie, load session + user, decorate `request.user`; `requireAuth` hook for protected route groups (scoped, not `fp`).
-4. `POST /auth/logout` and "log out everywhere"; password change invalidates other sessions.
-5. Organizations: create + owner membership in one transaction; tenant checks in the data-access layer.
-6. OIDC (Google), then partner API with client credentials.
+- The actor comes from the session, never from the URL or body. Ids in the request are targets.
+- `requireRoles(...)` on the route answers "may this person act in this organization": non-member `404` (same answer as a nonexistent organization), member with the wrong role `403`. Each route lists its allowed roles; there is no role hierarchy in code.
+- Every query on tenant-owned data carries `organization_id` in its `WHERE`. The hook does not check that the named record belongs to the organization; the query does.
+- Changes to the membership set lock the organization row first and re-check the actor inside the transaction.
+
+Measured in `labs/04-tenant-leak.md` and `labs/04-row-lock.md`; attacks live in `apps/api/src/routes/tenant-isolation.test.ts`.
+
+## Browser security: how the dashboard talks to the API
+
+Two different gatekeepers: **origin** (scheme + host + port) decides whether JavaScript may read a response (same-origin policy, CORS); **site** (registrable domain, ports and subdomains ignored) decides whether a `SameSite` cookie is sent.
+
+| decision         | choice                                                                 |
+| ---------------- | ---------------------------------------------------------------------- |
+| dashboard ↔ API  | same origin through a proxy; the API is served under `/api`            |
+| CORS             | none. Arrives only with the partner API, for those routes, cookie-less |
+| CSRF             | `SameSite=Lax` + JSON-only bodies + `Sec-Fetch-Site` check; no token   |
+| GET              | never changes state (Lax still sends the cookie on top-level GET)      |
+| `__Host-` prefix | with HTTPS in slice 13                                                 |
+
+Why three CSRF layers: `SameSite` stops other sites but not a sibling subdomain (`blog.example.com` is same-site). JSON-only stops HTML forms and forces a preflight for `fetch`, but depends on nobody adding a form-encoded endpoint. The `Sec-Fetch-Site` check rejects any state-changing request that is not `same-origin`, whatever the body type. CORS is not a CSRF defence: it blocks reading the response, not sending a simple request.
+
+## Deferred
+
+- OIDC (Google) and the partner API with client credentials: when the dashboard needs them.
+- Add-member becomes an invite flow (email + token) with the queue in slice 9.
+- "Leave organization" and role changes; the last-owner count becomes reachable then.

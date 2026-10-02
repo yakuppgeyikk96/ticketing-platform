@@ -12,6 +12,7 @@ import {
 import { randomUUID } from "node:crypto";
 import dbPlugin from "./plugins/db.ts";
 import errorsPlugin from "./plugins/errors.ts";
+import originCheckPlugin from "./plugins/origin-check.ts";
 import openapiPlugin from "./plugins/openapi.ts";
 import sessionPlugin from "./plugins/session.ts";
 import authRoutes from "./routes/auth.ts";
@@ -46,6 +47,7 @@ export async function createApp(opts: AppOptions) {
   });
 
   await app.register(errorsPlugin);
+  await app.register(originCheckPlugin);
   await app.register(fastifyCookie);
   await app.register(fastifyEtag);
   await app.register(openapiPlugin);
