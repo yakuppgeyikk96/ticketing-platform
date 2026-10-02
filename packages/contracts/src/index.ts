@@ -55,11 +55,15 @@ export const loginBodySchema = z.object({
   password: z.string().min(1).max(128),
 });
 
+export type LoginInput = z.input<typeof loginBodySchema>;
+
 export const currentUserSchema = z.object({
   id: z.uuid(),
   email: z.email(),
   fullName: z.string().nullable(),
 });
+
+export type CurrentUser = z.output<typeof currentUserSchema>;
 
 export const createOrganizationBodySchema = z.object({
   name: z.string().trim().min(2).max(100).meta({
