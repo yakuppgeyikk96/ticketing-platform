@@ -30,6 +30,7 @@ catalog:
   "@vitejs/plugin-react": ^6.1.1
   vite: ^8.3.0
   vitest: ^5.0.3
+  "@tanstack/react-query": ^5.104.1
 
 minimumReleaseAgeExclude:
   - zod@4.6.4

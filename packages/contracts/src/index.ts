@@ -88,6 +88,8 @@ export const userOrganizationSchema = z.object({
   role: memberRoleSchema,
 });
 
+export type UserOrganization = z.output<typeof userOrganizationSchema>;
+
 export const userOrganizationsResponseSchema = z.array(userOrganizationSchema);
 
 export const memberSchema = z.object({

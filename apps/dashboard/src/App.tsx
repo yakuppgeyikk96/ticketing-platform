@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { me } from "./api/auth.ts";
 import { ApiError } from "./api/client.ts";
 import { LoginForm } from "./auth/LoginForm.tsx";
+import { OrganizationList } from "./organizations/OrganizationList.tsx";
 
 // "unknown" is not "anonymous": at startup the cookie may be valid and we have
 // not asked yet. Showing the login form in that window flashes it at logged-in users.
@@ -48,7 +49,7 @@ export function App() {
         />
       );
     case "authenticated":
-      return <h1>Hoş geldin, {session.user.email}</h1>;
+      return <OrganizationList />;
     case "unreachable":
       return (
         <p>
