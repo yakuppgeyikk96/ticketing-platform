@@ -23,7 +23,7 @@ Who logs in. A person, never an organization.
 | ------------- | ----------- | ---------------------------------------- | ------------------------------------------------------------ |
 | id            | uuid        | pk, default uuidv7()                     |                                                              |
 | email         | text        | not null, unique index on `lower(email)` | DB enforces case-insensitive uniqueness; app also normalizes |
-| password_hash | text        | nullable                                 | argon2id output; null for OIDC-only accounts (slice 4)       |
+| password_hash | text        | nullable                                 | argon2id output; null for OIDC-only accounts                 |
 | full_name     | text        | nullable                                 | required at checkout, not at signup                          |
 | created_at    | timestamptz | not null, default now()                  |                                                              |
 | updated_at    | timestamptz | not null, default now()                  |                                                              |
@@ -42,7 +42,7 @@ The tenant. A company or a venue operator, not a person. Owns events.
 | name        | text        | not null                | not unique; many honest "Anadolu Tiyatro" can exist     |
 | slug        | text        | not null, unique        | public URL segment                                      |
 | tax_number  | text        | nullable                | collected at verification, before payout, not at signup |
-| logo_url    | text        | nullable                | file upload is a later slice                            |
+| logo_url    | text        | nullable                | file upload comes later                                 |
 | verified_at | timestamptz | nullable                | set when identity/tax documents are verified            |
 | created_at  | timestamptz | not null, default now() |                                                         |
 | updated_at  | timestamptz | not null, default now() |                                                         |

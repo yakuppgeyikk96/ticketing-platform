@@ -51,4 +51,4 @@ Both runs show ~470k refused: after the process exits nobody listens on the port
 - Handle `SIGTERM` and `SIGINT`: log, `await app.close()`, exit 0. A hard timer (`setTimeout(..., 10s).unref()`) exits 1 if close hangs.
 - Resource cleanup lives in plugins' `onClose` hooks (the db plugin ends the pool), not in `main.ts`.
 - Signal listeners must not be async functions directly: `process.on(sig, () => { void shutdown(sig) })` (`no-misused-promises`).
-- Drain order in production: readiness fails → LB stops routing → `SIGTERM` → in-flight completes → exit. Slice 13.
+- Drain order in production: readiness fails → LB stops routing → `SIGTERM` → in-flight completes → exit.

@@ -1,6 +1,6 @@
 # Authentication
 
-Slice 4 decision, before any code.
+Decision taken before any code.
 
 ## Decision
 
@@ -16,7 +16,7 @@ Not JWT for these surfaces. The product requires immediate revocation: logout mu
 | "Sign in with Google" (OIDC) | people in a browser       | Google ID token exchanged for **the same session** | server session                         |
 | Partner API                  | machines (agencies, orgs) | client credentials → short-lived token with scopes | token, no cookie, no interactive login |
 
-OIDC is a second way to open the session, not a second session model. The partner API exists because integrators call us as a program, at 3 a.m., with no user present; it needs revocable, scoped, quota-limited machine credentials. It is also the pull side of the webhooks in slice 8.
+OIDC is a second way to open the session, not a second session model. The partner API exists because integrators call us as a program, at 3 a.m., with no user present; it needs revocable, scoped, quota-limited machine credentials. It is also the pull side of the webhooks.
 
 There is no service-to-service HTTP auth in this system: `api` and `worker` share the database and the queue rather than calling each other.
 
@@ -29,7 +29,7 @@ A stolen token has no remedy; CSRF has cheap, browser-backed remedies. The cooki
 
 ## Why PostgreSQL, not Redis, for sessions
 
-"Log out everywhere", "show my active sessions", "revoke all sessions of user X when they leave organization Y" are relational queries over `sessions` joined with `users` and `organization_members`. Latency of the per-request lookup is a primary-key read. If it shows up in a flame graph in slice 12, a Redis read-through cache goes in front of the table, measured before and after.
+"Log out everywhere", "show my active sessions", "revoke all sessions of user X when they leave organization Y" are relational queries over `sessions` joined with `users` and `organization_members`. Latency of the per-request lookup is a primary-key read. If it shows up in a flame graph under load testing, a Redis read-through cache goes in front of the table, measured before and after.
 
 ## When a mobile app arrives
 
@@ -63,12 +63,12 @@ Two different gatekeepers: **origin** (scheme + host + port) decides whether Jav
 | CORS             | none. Arrives only with the partner API, for those routes, cookie-less |
 | CSRF             | `SameSite=Lax` + JSON-only bodies + `Sec-Fetch-Site` check; no token   |
 | GET              | never changes state (Lax still sends the cookie on top-level GET)      |
-| `__Host-` prefix | with HTTPS in slice 13                                                 |
+| `__Host-` prefix | when the deployment serves HTTPS                                       |
 
 Why three CSRF layers: `SameSite` stops other sites but not a sibling subdomain (`blog.example.com` is same-site). JSON-only stops HTML forms and forces a preflight for `fetch`, but depends on nobody adding a form-encoded endpoint. The `Sec-Fetch-Site` check rejects any state-changing request that is not `same-origin`, whatever the body type. CORS is not a CSRF defence: it blocks reading the response, not sending a simple request.
 
 ## Deferred
 
 - OIDC (Google) and the partner API with client credentials: when the dashboard needs them.
-- Add-member becomes an invite flow (email + token) with the queue in slice 9.
+- Add-member becomes an invite flow (email + token) once the job queue exists.
 - "Leave organization" and role changes; the last-owner count becomes reachable then.
