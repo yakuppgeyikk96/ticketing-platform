@@ -71,11 +71,17 @@ export const createOrganizationBodySchema = z.object({
   }),
 });
 
+export type CreateOrganizationInput = z.input<
+  typeof createOrganizationBodySchema
+>;
+
 export const organizationSchema = z.object({
   id: z.uuid(),
   name: z.string(),
   slug: z.string(),
 });
+
+export type Organization = z.output<typeof organizationSchema>;
 
 export const organizationParamsSchema = z.object({
   organizationId: z.uuid(),

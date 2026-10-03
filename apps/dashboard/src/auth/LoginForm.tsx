@@ -1,7 +1,8 @@
 import type { CurrentUser } from "@ticketing/contracts";
-import { useState, type FormEvent } from "react";
+import { useState, type SubmitEvent } from "react";
 import { login } from "../api/auth.ts";
-import { ApiError } from "../api/client.ts";
+import { describeError } from "../api/errors.ts";
+import { textField } from "../lib/form.ts";
 
 type LoginState =
   | { status: "idle" }
@@ -15,7 +16,7 @@ type LoginFormProps = {
 export function LoginForm({ onSuccess }: LoginFormProps) {
   const [loginState, setLoginState] = useState<LoginState>({ status: "idle" });
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
 
     const loginForm = new FormData(event.currentTarget);
@@ -29,7 +30,10 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
       });
       onSuccess(user);
     } catch (err) {
-      setLoginState({ status: "failed", message: describeError(err) });
+      setLoginState({
+        status: "failed",
+        message: describeError(err, loginMessages),
+      });
     }
   }
 
@@ -63,21 +67,7 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
   );
 }
 
-// FormData.get() is string | File | null. A text input always yields a string;
-// anything else means the form markup changed, which is a programmer error.
-function textField(form: FormData, name: string): string {
-  const value = form.get(name);
-  if (typeof value !== "string") throw new Error(`missing text field ${name}`);
-  return value;
-}
-
-// The screen decides on the problem type, never on the message text.
-function describeError(err: unknown): string {
-  if (err instanceof ApiError) {
-    if (err.problem.type === "/problems/invalid-credentials") {
-      return "E-posta veya parola hatalı";
-    }
-    return err.problem.title;
-  }
-  return "Sunucuya ulaşılamadı, tekrar dene";
-}
+// Messages this screen wants to phrase itself, keyed by problem type.
+const loginMessages = {
+  "/problems/invalid-credentials": "E-posta veya parola hatalı",
+};

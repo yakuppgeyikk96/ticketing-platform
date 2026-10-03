@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { me } from "./api/auth.ts";
 import { ApiError } from "./api/client.ts";
 import { LoginForm } from "./auth/LoginForm.tsx";
+import { CreateOrganizationForm } from "./organizations/CreateOrganizationForm.tsx";
 import { OrganizationList } from "./organizations/OrganizationList.tsx";
 
 // "unknown" is not "anonymous": at startup the cookie may be valid and we have
@@ -49,7 +50,12 @@ export function App() {
         />
       );
     case "authenticated":
-      return <OrganizationList />;
+      return (
+        <>
+          <CreateOrganizationForm />
+          <OrganizationList />
+        </>
+      );
     case "unreachable":
       return (
         <p>

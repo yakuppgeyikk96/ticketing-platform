@@ -1,5 +1,5 @@
 import { listMyOrganizations } from "../api/organizations.ts";
-import { ApiError } from "../api/client.ts";
+import { describeError } from "../api/errors.ts";
 import { useQuery } from "@tanstack/react-query";
 
 export function OrganizationList() {
@@ -30,11 +30,4 @@ export function OrganizationList() {
       ))}
     </ul>
   );
-}
-
-function describeError(err: Error): string {
-  if (err instanceof ApiError) {
-    return err.problem.title;
-  }
-  return "Sunucuya ulaşılamadı, tekrar dene";
 }
