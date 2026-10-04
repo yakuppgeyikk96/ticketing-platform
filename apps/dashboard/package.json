@@ -15,7 +15,8 @@
     "react": "catalog:",
     "react-dom": "catalog:",
     "zod": "catalog:",
-    "@tanstack/react-query": "catalog:"
+    "@tanstack/react-query": "catalog:",
+    "react-router": "catalog:"
   },
   "devDependencies": {
     "@ticketing/tsconfig": "workspace:*",
