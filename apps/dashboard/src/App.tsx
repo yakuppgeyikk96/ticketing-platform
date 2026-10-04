@@ -1,67 +1,52 @@
-import type { CurrentUser } from "@ticketing/contracts";
-import { useEffect, useState } from "react";
-import { me } from "./api/auth.ts";
 import { ApiError } from "./api/client.ts";
 import { LoginForm } from "./auth/LoginForm.tsx";
 import { CreateOrganizationForm } from "./organizations/CreateOrganizationForm.tsx";
 import { OrganizationList } from "./organizations/OrganizationList.tsx";
-
-// "unknown" is not "anonymous": at startup the cookie may be valid and we have
-// not asked yet. Showing the login form in that window flashes it at logged-in users.
-type Session =
-  | { status: "unknown" }
-  | { status: "anonymous" }
-  | { status: "authenticated"; user: CurrentUser }
-  | { status: "unreachable" };
+import { useSession } from "./auth/session.ts";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { logout } from "./api/auth.ts";
 
 export function App() {
-  const [session, setSession] = useState<Session>({ status: "unknown" });
+  const session = useSession();
 
-  useEffect(() => {
-    // Set by the cleanup: a response that lands after unmount (or after
-    // StrictMode's deliberate re-run in dev) must not touch state.
-    let ignore = false;
+  const queryClient = useQueryClient();
 
-    me()
-      .then((user) => {
-        if (!ignore) setSession({ status: "authenticated", user });
-      })
-      .catch((err: unknown) => {
-        if (ignore) return;
-        if (err instanceof ApiError && err.status === 401) {
-          setSession({ status: "anonymous" });
-        } else {
-          setSession({ status: "unreachable" });
-        }
-      });
+  const logoutMutation = useMutation({
+    mutationFn: logout,
+    // to clear organization lists of previous user
+    // in case next user who logs in might be different
+    onSuccess: () => queryClient.clear(),
+  });
 
-    return () => {
-      ignore = true;
-    };
-  }, []);
-
-  switch (session.status) {
-    case "unknown":
-      return <p>Yükleniyor…</p>;
-    case "anonymous":
-      return (
-        <LoginForm
-          onSuccess={(user) => setSession({ status: "authenticated", user })}
-        />
-      );
-    case "authenticated":
-      return (
-        <>
-          <CreateOrganizationForm />
-          <OrganizationList />
-        </>
-      );
-    case "unreachable":
-      return (
-        <p>
-          Sunucuya ulaşılamadı.{" "}
-          <button onClick={() => window.location.reload()}>Tekrar dene</button>
-        </p>
-      );
+  if (session.isPending) {
+    return <p>Yükleniyor…</p>;
   }
+
+  if (session.isError) {
+    const err = session.error;
+
+    if (err instanceof ApiError && err.status === 401) {
+      return <LoginForm />;
+    }
+
+    return (
+      <>
+        <p>Sunucuya ulaşılamadı</p>
+        <button onClick={() => void session.refetch()}>Tekrar dene</button>
+      </>
+    );
+  }
+
+  return (
+    <>
+      <CreateOrganizationForm />
+      <OrganizationList />
+      <button
+        disabled={logoutMutation.isPending}
+        onClick={() => logoutMutation.mutate()}
+      >
+        Çıkış yap
+      </button>
+    </>
+  );
 }

@@ -1,46 +1,31 @@
-import type { CurrentUser } from "@ticketing/contracts";
-import { useState, type SubmitEvent } from "react";
+import type { SubmitEvent } from "react";
 import { login } from "../api/auth.ts";
 import { describeError } from "../api/errors.ts";
 import { textField } from "../lib/form.ts";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { sessionKey } from "./session.ts";
 
-type LoginState =
-  | { status: "idle" }
-  | { status: "submitting" }
-  | { status: "failed"; message: string };
+export function LoginForm() {
+  const queryClient = useQueryClient();
 
-type LoginFormProps = {
-  onSuccess: (user: CurrentUser) => void;
-};
+  const mutation = useMutation({
+    mutationFn: login,
+    onSuccess: (user) => queryClient.setQueryData(sessionKey, user),
+  });
 
-export function LoginForm({ onSuccess }: LoginFormProps) {
-  const [loginState, setLoginState] = useState<LoginState>({ status: "idle" });
-
-  async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
+  function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
 
     const loginForm = new FormData(event.currentTarget);
 
-    setLoginState({ status: "submitting" });
-
-    try {
-      const user = await login({
-        email: textField(loginForm, "email"),
-        password: textField(loginForm, "password"),
-      });
-      onSuccess(user);
-    } catch (err) {
-      setLoginState({
-        status: "failed",
-        message: describeError(err, loginMessages),
-      });
-    }
+    mutation.mutate({
+      email: textField(loginForm, "email"),
+      password: textField(loginForm, "password"),
+    });
   }
 
   return (
-    // The handler is async; the event prop expects void, so the promise is
-    // explicitly discarded here (same reason as `void shutdown()` in the API).
-    <form onSubmit={(event) => void handleSubmit(event)}>
+    <form onSubmit={handleSubmit}>
       <label htmlFor="email">E-posta</label>
       <input
         id="email"
@@ -57,11 +42,11 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
         autoComplete="current-password"
         required
       />
-      {loginState.status === "failed" && (
-        <p role="alert">{loginState.message}</p>
+      {mutation.isError && (
+        <p role="alert">{describeError(mutation.error, loginMessages)}</p>
       )}
-      <button disabled={loginState.status === "submitting"}>
-        {loginState.status === "submitting" ? "Giriş yapılıyor…" : "Giriş yap"}
+      <button disabled={mutation.isPending}>
+        {mutation.isPending ? "Giriş yapılıyor…" : "Giriş yap"}
       </button>
     </form>
   );
