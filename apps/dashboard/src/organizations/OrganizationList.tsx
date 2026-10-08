@@ -1,10 +1,11 @@
-import { listMyOrganizations } from "../api/organizations.ts";
+import { listMyOrganizations, organizationKeys } from "../api/organizations.ts";
 import { describeError } from "../api/errors.ts";
 import { useQuery } from "@tanstack/react-query";
+import { Link } from "react-router";
 
 export function OrganizationList() {
   const query = useQuery({
-    queryKey: ["organizations", "mine"],
+    queryKey: organizationKeys.mine(),
     queryFn: listMyOrganizations,
   });
 
@@ -24,7 +25,7 @@ export function OrganizationList() {
     <ul>
       {query.data.map((org) => (
         <li key={org.id}>
-          {org.name}
+          <Link to={`/organizations/${org.id}`}>{org.name}</Link>{" "}
           <small>{org.role}</small>
         </li>
       ))}

@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { SubmitEvent } from "react";
 import { describeError } from "../api/errors.ts";
-import { createOrganization } from "../api/organizations.ts";
+import { createOrganization, organizationKeys } from "../api/organizations.ts";
 import { textField } from "../lib/form.ts";
 
 export function CreateOrganizationForm() {
@@ -12,7 +12,7 @@ export function CreateOrganizationForm() {
     // Runs on every successful call: mark every "organizations" query stale so
     // whoever shows one refetches. The form does not know the list exists.
     onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: ["organizations"] }),
+      queryClient.invalidateQueries({ queryKey: organizationKeys.all }),
   });
 
   function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
