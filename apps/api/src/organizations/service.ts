@@ -35,11 +35,13 @@ interface AddMemberInput {
   role: MemberRole;
 }
 
-interface AddMemberReturn {
+interface Member {
   userId: string;
   email: string;
   role: MemberRole;
 }
+
+type AddMemberReturn = Member;
 
 export async function createOrganization(
   db: Db,
@@ -154,6 +156,56 @@ export async function listUserOrganizations(
     )
     .where(eq(organizationMembers.userId, userId))
     .orderBy(asc(organizations.name));
+}
+
+export async function getOrganizationForUser(
+  db: Db,
+  params: { organizationId: string; userId: string },
+): Promise<UserOrganization | null> {
+  // Membership is the access check: a non-member gets null, same as a missing org.
+  const [row] = await db
+    .select({
+      id: organizations.id,
+      name: organizations.name,
+      slug: organizations.slug,
+      role: organizationMembers.role,
+    })
+    .from(organizationMembers)
+    .innerJoin(
+      organizations,
+      eq(organizationMembers.organizationId, organizations.id),
+    )
+    .where(
+      and(
+        eq(organizationMembers.userId, params.userId),
+        eq(organizationMembers.organizationId, params.organizationId),
+      ),
+    )
+    .limit(1);
+
+  return row ?? null;
+}
+
+export async function listMembers(
+  db: Db,
+  organizationId: string,
+): Promise<Member[]> {
+  // Soft-deleted accounts keep their membership row but drop out of the list.
+  return await db
+    .select({
+      userId: organizationMembers.userId,
+      email: users.email,
+      role: organizationMembers.role,
+    })
+    .from(organizationMembers)
+    .innerJoin(users, eq(users.id, organizationMembers.userId))
+    .where(
+      and(
+        eq(organizationMembers.organizationId, organizationId),
+        isNull(users.deletedAt),
+      ),
+    )
+    .orderBy(asc(users.email));
 }
 
 interface RemoveMemberInput {

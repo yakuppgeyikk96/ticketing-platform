@@ -104,6 +104,10 @@ export const memberSchema = z.object({
   role: memberRoleSchema,
 });
 
+export type Member = z.output<typeof memberSchema>;
+
+export const membersResponseSchema = z.array(memberSchema);
+
 export const addMemberBodySchema = z.object({
   email: emailInputSchema,
   role: memberRoleSchema,

@@ -4,6 +4,7 @@ import { after, before, test } from "node:test";
 import {
   currentUserSchema,
   memberSchema,
+  membersResponseSchema,
   userOrganizationsResponseSchema,
   organizationSchema,
   problemSchema,
@@ -464,4 +465,54 @@ test("DELETE keeps at least one owner when two owners remove each other concurre
   assert.equal(statuses[0], 204);
   assert.ok(statuses[1] === 403 || statuses[1] === 404, `got ${statuses[1]}`);
   assert.equal(await ownerCount(orgId), 1);
+});
+
+test("GET /organizations/:id returns the organization with the caller's role", async () => {
+  const owner = await signUp();
+  const staff = await signUp();
+  const orgId = await createOrg(owner.cookie);
+  await addAndGetId(owner.cookie, orgId, staff.email, "staff");
+
+  const asOwner = await app.inject({
+    method: "GET",
+    url: `/organizations/${orgId}`,
+    headers: { cookie: owner.cookie },
+  });
+  const asStaff = await app.inject({
+    method: "GET",
+    url: `/organizations/${orgId}`,
+    headers: { cookie: staff.cookie },
+  });
+
+  assert.equal(asOwner.statusCode, 200);
+  assert.equal(asStaff.statusCode, 200);
+  // Same organization, different role: the role belongs to the caller, not the org.
+  const a = userOrganizationsResponseSchema.element.parse(asOwner.json());
+  const b = userOrganizationsResponseSchema.element.parse(asStaff.json());
+  assert.equal(a.id, orgId);
+  assert.deepEqual([a.role, b.role], ["owner", "staff"]);
+  assert.equal(a.name, b.name);
+});
+
+test("GET /organizations/:id/members lists members ordered by email, visible to every role", async () => {
+  const owner = await signUp();
+  const staff = await signUp();
+  const orgId = await createOrg(owner.cookie);
+  const staffId = await addAndGetId(owner.cookie, orgId, staff.email, "staff");
+
+  const res = await app.inject({
+    method: "GET",
+    url: `/organizations/${orgId}/members`,
+    headers: { cookie: staff.cookie },
+  });
+
+  assert.equal(res.statusCode, 200);
+  const members = membersResponseSchema.parse(res.json());
+  assert.equal(members.length, 2);
+  assert.deepEqual(
+    members.map((m) => m.email),
+    [...members.map((m) => m.email)].sort(),
+  );
+  assert.ok(members.some((m) => m.userId === staffId && m.role === "staff"));
+  assert.ok(members.some((m) => m.email === owner.email && m.role === "owner"));
 });

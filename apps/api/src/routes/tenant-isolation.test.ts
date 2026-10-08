@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { after, before, test } from "node:test";
 import {
+  membersResponseSchema,
   problemSchema,
   userOrganizationsResponseSchema,
 } from "@ticketing/contracts";
@@ -153,4 +154,37 @@ test("attack 7: the organization list never shows another user's organization", 
     .parse(res.json())
     .map((o) => o.id);
   assert.deepEqual(ids, [attackerOrg]);
+});
+
+test("attack 8: an outsider can read neither the organization nor its members", async () => {
+  const org = await app.inject({
+    method: "GET",
+    url: `/organizations/${victimOrg}`,
+    headers: { cookie: attacker.cookie },
+  });
+  const members = await app.inject({
+    method: "GET",
+    url: `/organizations/${victimOrg}/members`,
+    headers: { cookie: attacker.cookie },
+  });
+
+  for (const res of [org, members]) {
+    assert.equal(res.statusCode, 404);
+    assert.equal(
+      problemSchema.parse(res.json()).type,
+      "/problems/organization-not-found",
+    );
+  }
+});
+
+test("attack 9: the member list of one organization never includes another's members", async () => {
+  const res = await app.inject({
+    method: "GET",
+    url: `/organizations/${attackerOrg}/members`,
+    headers: { cookie: attacker.cookie },
+  });
+
+  assert.equal(res.statusCode, 200);
+  const emails = membersResponseSchema.parse(res.json()).map((m) => m.email);
+  assert.deepEqual(emails, [attacker.email]);
 });

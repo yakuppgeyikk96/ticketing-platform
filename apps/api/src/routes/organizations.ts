@@ -7,16 +7,21 @@ import {
   addMemberBodySchema,
   memberSchema,
   memberParamsSchema,
+  membersResponseSchema,
+  userOrganizationSchema,
 } from "@ticketing/contracts";
 import type { FastifyPluginCallbackZod } from "fastify-type-provider-zod";
 import { requireAuth } from "../auth/require-auth.ts";
 import {
   addMember,
   createOrganization,
+  getOrganizationForUser,
+  listMembers,
   listUserOrganizations,
   removeMember,
 } from "../organizations/service.ts";
 import { requireRoles } from "../auth/require-roles.ts";
+import { NotFoundError } from "../errors.ts";
 import { z } from "zod";
 
 export const organizationsRoutes: FastifyPluginCallbackZod = (fastify) => {
@@ -66,6 +71,67 @@ export const organizationsRoutes: FastifyPluginCallbackZod = (fastify) => {
       );
 
       return reply.code(200).send(organizations);
+    },
+  );
+
+  fastify.get(
+    "/:organizationId",
+    {
+      onRequest: requireAuth,
+      preHandler: requireRoles("owner", "admin", "staff"),
+      schema: {
+        params: organizationParamsSchema,
+        response: {
+          200: userOrganizationSchema,
+          401: problemSchema,
+          403: problemSchema,
+          404: problemSchema,
+        },
+      },
+    },
+    async (request, reply) => {
+      if (!request.user) throw new Error("unreachable: requireAuth passed");
+
+      const org = await getOrganizationForUser(fastify.db, {
+        organizationId: request.params.organizationId,
+        userId: request.user.id,
+      });
+
+      // requireRoles already saw a membership, but outside a transaction it can
+      // vanish between the hook and this query. Defensive, not a new rule.
+      if (!org) {
+        throw new NotFoundError(
+          "organization-not-found",
+          "Organization not found",
+        );
+      }
+
+      return reply.code(200).send(org);
+    },
+  );
+
+  fastify.get(
+    "/:organizationId/members",
+    {
+      onRequest: requireAuth,
+      preHandler: requireRoles("owner", "admin", "staff"),
+      schema: {
+        params: organizationParamsSchema,
+        response: {
+          200: membersResponseSchema,
+          401: problemSchema,
+          403: problemSchema,
+          404: problemSchema,
+        },
+      },
+    },
+    async (request, reply) => {
+      const members = await listMembers(
+        fastify.db,
+        request.params.organizationId,
+      );
+
+      return reply.code(200).send(members);
     },
   );
 
