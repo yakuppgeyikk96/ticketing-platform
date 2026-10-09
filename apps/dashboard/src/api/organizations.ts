@@ -7,9 +7,14 @@ import {
   type Member,
   type Organization,
   type UserOrganization,
+  type AddMemberInput,
+  memberSchema,
 } from "@ticketing/contracts";
 import { queryOptions } from "@tanstack/react-query";
 import { request } from "./client.ts";
+import { z } from "zod";
+
+export const ORGANIZATON_BASE_ROUTE = "/organizations";
 
 export const organizationKeys = {
   all: ["organizations"] as const,
@@ -19,7 +24,7 @@ export const organizationKeys = {
 };
 
 export async function listMyOrganizations(): Promise<UserOrganization[]> {
-  return await request("/organizations", {
+  return await request(ORGANIZATON_BASE_ROUTE, {
     response: userOrganizationsResponseSchema,
   });
 }
@@ -34,23 +39,47 @@ export const myOrganizationsQuery = queryOptions({
 export async function getOrganization(
   organizationId: string,
 ): Promise<UserOrganization> {
-  return await request(`/organizations/${organizationId}`, {
+  return await request(`${ORGANIZATON_BASE_ROUTE}/${organizationId}`, {
     response: userOrganizationSchema,
-  });
-}
-
-export async function listMembers(organizationId: string): Promise<Member[]> {
-  return await request(`/organizations/${organizationId}/members`, {
-    response: membersResponseSchema,
   });
 }
 
 export async function createOrganization(
   body: CreateOrganizationInput,
 ): Promise<Organization> {
-  return await request("/organizations", {
+  return await request(ORGANIZATON_BASE_ROUTE, {
     response: organizationSchema,
     method: "POST",
     body,
   });
+}
+
+export async function addMember(
+  organizationId: string,
+  body: AddMemberInput,
+): Promise<Member> {
+  return await request(`${ORGANIZATON_BASE_ROUTE}/${organizationId}/members`, {
+    method: "POST",
+    response: memberSchema,
+    body,
+  });
+}
+
+export async function listMembers(organizationId: string): Promise<Member[]> {
+  return await request(`${ORGANIZATON_BASE_ROUTE}/${organizationId}/members`, {
+    response: membersResponseSchema,
+  });
+}
+
+export async function removeMember(
+  organizationId: string,
+  userId: string,
+): Promise<void> {
+  return await request(
+    `${ORGANIZATON_BASE_ROUTE}/${organizationId}/members/${userId}`,
+    {
+      method: "DELETE",
+      response: z.undefined(),
+    },
+  );
 }

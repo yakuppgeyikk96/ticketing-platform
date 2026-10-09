@@ -113,6 +113,8 @@ export const addMemberBodySchema = z.object({
   role: memberRoleSchema,
 });
 
+export type AddMemberInput = z.input<typeof addMemberBodySchema>;
+
 export const memberParamsSchema = organizationParamsSchema.extend({
   userId: z.uuid(),
 });

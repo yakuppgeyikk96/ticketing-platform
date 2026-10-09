@@ -4,10 +4,11 @@ import { ApiError } from "../api/client.ts";
 import { describeError } from "../api/errors.ts";
 import {
   getOrganization,
-  listMembers,
   myOrganizationsQuery,
   organizationKeys,
 } from "../api/organizations.ts";
+import { AddMemberForm } from "./AddMemberForm.tsx";
+import { MemberList } from "./MemberList.tsx";
 
 export function OrganizationPage() {
   const { organizationId } = useParams();
@@ -25,10 +26,6 @@ export function OrganizationPage() {
       queryClient
         .getQueryData(myOrganizationsQuery.queryKey)
         ?.find((org) => org.id === organizationId),
-  });
-  const members = useQuery({
-    queryKey: organizationKeys.members(organizationId),
-    queryFn: () => listMembers(organizationId),
   });
 
   if (organization.isPending) {
@@ -63,16 +60,13 @@ export function OrganizationPage() {
       </p>
 
       <h2>Üyeler</h2>
-      {members.isPending && <p>Yükleniyor…</p>}
-      {members.isError && <p role="alert">{describeError(members.error)}</p>}
-      {members.data && (
-        <ul>
-          {members.data.map((member) => (
-            <li key={member.userId}>
-              {member.email} <small>{member.role}</small>
-            </li>
-          ))}
-        </ul>
+      <MemberList
+        organizationId={organizationId}
+        role={organization.data.role}
+      />
+      {(organization.data.role === "owner" ||
+        organization.data.role === "admin") && (
+        <AddMemberForm organizationId={organizationId} />
       )}
     </>
   );
