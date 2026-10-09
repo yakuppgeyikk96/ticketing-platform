@@ -1,6 +1,7 @@
 // Order matters: tokens first (plain custom properties), then the layered reset.
 import "@ticketing/design/tokens.css";
 import "@ticketing/design/reset.css";
+import "./styles/app.css";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { App } from "./App.tsx";

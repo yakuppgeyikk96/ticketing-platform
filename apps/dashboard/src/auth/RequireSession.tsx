@@ -38,8 +38,8 @@ export function RequireSession() {
   }
 
   return (
-    <>
-      <header>
+    <div className="app-shell">
+      <header className="app-header">
         <span>{session.data.email}</span>
         <button
           disabled={logoutMutation.isPending}
@@ -48,9 +48,9 @@ export function RequireSession() {
           Çıkış yap
         </button>
       </header>
-      <main>
+      <main className="app-main">
         <Outlet />
       </main>
-    </>
+    </div>
   );
 }

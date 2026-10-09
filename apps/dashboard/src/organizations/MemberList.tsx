@@ -45,7 +45,7 @@ export function MemberList({ organizationId, role }: MemberListProps) {
   const canRemove = role === "owner";
 
   return (
-    <ul>
+    <ul role="list">
       {members.data.map((member) => {
         const removing =
           removal.isPending && removal.variables === member.userId;

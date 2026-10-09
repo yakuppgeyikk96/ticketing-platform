@@ -3,6 +3,8 @@ import { describeError } from "../api/errors.ts";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router";
 
+import styles from "./OrganizationList.module.css";
+
 export function OrganizationList() {
   const query = useQuery(myOrganizationsQuery);
 
@@ -19,9 +21,9 @@ export function OrganizationList() {
   }
 
   return (
-    <ul>
+    <ul role="list">
       {query.data.map((org) => (
-        <li key={org.id}>
+        <li key={org.id} className={styles.row}>
           <Link to={`/organizations/${org.id}`}>{org.name}</Link>{" "}
           <small>{org.role}</small>
         </li>
