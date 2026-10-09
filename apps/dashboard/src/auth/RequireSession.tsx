@@ -3,6 +3,7 @@ import { Navigate, Outlet, useLocation } from "react-router";
 import { logout } from "../api/auth.ts";
 import { ApiError } from "../api/client.ts";
 import { useSession } from "./session.ts";
+import { Button } from "../components/Button.tsx";
 
 // Layout route: every page nested under it renders in <Outlet /> and may
 // assume a session exists. Protecting a page means placing it under this node.
@@ -32,7 +33,9 @@ export function RequireSession() {
     return (
       <>
         <p>Sunucuya ulaşılamadı</p>
-        <button onClick={() => void session.refetch()}>Tekrar dene</button>
+        <Button variant="secondary" onClick={() => void session.refetch()}>
+          Tekrar dene
+        </Button>
       </>
     );
   }
@@ -41,12 +44,13 @@ export function RequireSession() {
     <div className="app-shell">
       <header className="app-header">
         <span>{session.data.email}</span>
-        <button
+        <Button
+          variant="secondary"
           disabled={logoutMutation.isPending}
           onClick={() => logoutMutation.mutate()}
         >
           Çıkış yap
-        </button>
+        </Button>
       </header>
       <main className="app-main">
         <Outlet />

@@ -1,7 +1,9 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { SubmitEvent } from "react";
-import { describeError } from "../api/errors.ts";
+import { describeError, fieldErrors, isFormLevelError } from "../api/errors.ts";
 import { createOrganization, organizationKeys } from "../api/organizations.ts";
+import { Button } from "../components/Button.tsx";
+import { Field } from "../components/Field.tsx";
 import { textField } from "../lib/form.ts";
 
 export function CreateOrganizationForm() {
@@ -27,14 +29,25 @@ export function CreateOrganizationForm() {
     );
   }
 
+  // Field validation goes under its input; anything else under the form.
+  const errors = fieldErrors(mutation.error);
+
   return (
     <form onSubmit={handleSubmit}>
-      <label htmlFor="name">Organizasyon adı</label>
-      <input id="name" name="name" required minLength={2} maxLength={100} />
-      {mutation.isError && <p role="alert">{describeError(mutation.error)}</p>}
-      <button disabled={mutation.isPending}>
+      <Field
+        label="Organizasyon adı"
+        name="name"
+        required
+        minLength={2}
+        maxLength={100}
+        error={errors.name}
+      />
+      {mutation.isError && isFormLevelError(mutation.error) && (
+        <p role="alert">{describeError(mutation.error)}</p>
+      )}
+      <Button busy={mutation.isPending}>
         {mutation.isPending ? "Oluşturuluyor…" : "Oluştur"}
-      </button>
+      </Button>
     </form>
   );
 }

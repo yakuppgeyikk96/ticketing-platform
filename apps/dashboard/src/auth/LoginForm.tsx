@@ -4,6 +4,8 @@ import { describeError } from "../api/errors.ts";
 import { textField } from "../lib/form.ts";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { sessionKey } from "./session.ts";
+import { Field } from "../components/Field.tsx";
+import { Button } from "../components/Button.tsx";
 
 export function LoginForm() {
   const queryClient = useQueryClient();
@@ -26,17 +28,15 @@ export function LoginForm() {
 
   return (
     <form onSubmit={handleSubmit}>
-      <label htmlFor="email">E-posta</label>
-      <input
-        id="email"
+      <Field
+        label="E-posta"
         name="email"
         type="email"
         autoComplete="username"
         required
       />
-      <label htmlFor="password">Parola</label>
-      <input
-        id="password"
+      <Field
+        label="Parola"
         name="password"
         type="password"
         autoComplete="current-password"
@@ -45,9 +45,9 @@ export function LoginForm() {
       {mutation.isError && (
         <p role="alert">{describeError(mutation.error, loginMessages)}</p>
       )}
-      <button disabled={mutation.isPending}>
+      <Button busy={mutation.isPending}>
         {mutation.isPending ? "Giriş yapılıyor…" : "Giriş yap"}
-      </button>
+      </Button>
     </form>
   );
 }

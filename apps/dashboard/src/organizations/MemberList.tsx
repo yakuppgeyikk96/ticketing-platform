@@ -6,6 +6,7 @@ import {
   organizationKeys,
   removeMember,
 } from "../api/organizations.ts";
+import { Button } from "../components/Button.tsx";
 
 interface MemberListProps {
   organizationId: string;
@@ -55,12 +56,14 @@ export function MemberList({ organizationId, role }: MemberListProps) {
           <li key={member.userId} style={{ opacity: removing ? 0.5 : 1 }}>
             {member.email} <small>{member.role}</small>
             {canRemove && (
-              <button
+              <Button
+                variant="danger"
+                busy={removing}
                 disabled={removal.isPending}
                 onClick={() => removal.mutate(member.userId)}
               >
                 {removing ? "Çıkarılıyor…" : "Çıkar"}
-              </button>
+              </Button>
             )}
             {failed && (
               <p role="alert">{describeError(removal.error, removeMessages)}</p>

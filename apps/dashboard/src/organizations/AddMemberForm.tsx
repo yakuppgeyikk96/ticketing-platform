@@ -1,8 +1,10 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { memberRoleSchema, type AddMemberInput } from "@ticketing/contracts";
-import type { SubmitEvent } from "react";
-import { describeError } from "../api/errors.ts";
+import { useId, type SubmitEvent } from "react";
+import { describeError, fieldErrors, isFormLevelError } from "../api/errors.ts";
 import { addMember, organizationKeys } from "../api/organizations.ts";
+import { Button } from "../components/Button.tsx";
+import { Field } from "../components/Field.tsx";
 import { textField } from "../lib/form.ts";
 
 interface AddMemberFormProps {
@@ -16,6 +18,7 @@ const addMemberMessages = {
 
 export function AddMemberForm({ organizationId }: AddMemberFormProps) {
   const queryClient = useQueryClient();
+  const roleId = useId();
 
   const mutation = useMutation({
     // organizationId comes from the closure; the caller only decides who and as what.
@@ -42,22 +45,22 @@ export function AddMemberForm({ organizationId }: AddMemberFormProps) {
     );
   }
 
+  const errors = fieldErrors(mutation.error);
+
   return (
     <form onSubmit={handleSubmit}>
       <h3>Üye ekle</h3>
+      <Field
+        label="E-posta"
+        name="email"
+        type="email"
+        required
+        maxLength={254}
+        error={errors.email}
+      />
       <div>
-        <label htmlFor="member-email">E-posta</label>
-        <input
-          id="member-email"
-          name="email"
-          type="email"
-          required
-          maxLength={254}
-        />
-      </div>
-      <div>
-        <label htmlFor="member-role">Rol</label>
-        <select id="member-role" name="role" defaultValue="staff">
+        <label htmlFor={roleId}>Rol</label>
+        <select id={roleId} name="role" defaultValue="staff">
           {memberRoleSchema.options.map((role) => (
             <option key={role} value={role}>
               {role}
@@ -65,12 +68,12 @@ export function AddMemberForm({ organizationId }: AddMemberFormProps) {
           ))}
         </select>
       </div>
-      {mutation.isError && (
+      {mutation.isError && isFormLevelError(mutation.error) && (
         <p role="alert">{describeError(mutation.error, addMemberMessages)}</p>
       )}
-      <button disabled={mutation.isPending}>
+      <Button busy={mutation.isPending}>
         {mutation.isPending ? "Ekleniyor…" : "Ekle"}
-      </button>
+      </Button>
     </form>
   );
 }
