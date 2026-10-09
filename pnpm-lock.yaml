@@ -278,6 +278,9 @@ importers:
       '@ticketing/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
+      '@ticketing/design':
+        specifier: workspace:*
+        version: link:../../packages/design
       react:
         specifier: 'catalog:'
         version: 19.3.0
@@ -356,6 +359,8 @@ importers:
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
+
+  packages/design: {}
 
   packages/tsconfig: {}
 

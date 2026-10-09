@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@ticketing/contracts": "workspace:*",
+    "@ticketing/design": "workspace:*",
     "react": "catalog:",
     "react-dom": "catalog:",
     "zod": "catalog:",
