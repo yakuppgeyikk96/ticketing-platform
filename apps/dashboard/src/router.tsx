@@ -1,8 +1,6 @@
 import { createBrowserRouter, Navigate } from "react-router";
 import { LoginPage } from "./auth/LoginPage.tsx";
 import { RequireSession } from "./auth/RequireSession.tsx";
-import { OrganizationPage } from "./organizations/OrganizationPage.tsx";
-import { OrganizationsPage } from "./organizations/OrganizationsPage.tsx";
 
 export const router = createBrowserRouter([
   { path: "/login", Component: LoginPage },
@@ -11,10 +9,19 @@ export const router = createBrowserRouter([
     Component: RequireSession,
     children: [
       { index: true, element: <Navigate to="/organizations" replace /> },
-      { path: "/organizations", Component: OrganizationsPage },
+      {
+        path: "/organizations",
+        lazy: async () => ({
+          Component: (await import("./organizations/OrganizationsPage.tsx"))
+            .OrganizationsPage,
+        }),
+      },
       {
         path: "/organizations/:organizationId",
-        Component: OrganizationPage,
+        lazy: async () => ({
+          Component: (await import("./organizations/OrganizationPage.tsx"))
+            .OrganizationPage,
+        }),
       },
     ],
   },
