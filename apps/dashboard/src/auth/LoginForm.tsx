@@ -6,6 +6,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { sessionKey } from "./session.ts";
 import { Field } from "../components/Field.tsx";
 import { Button } from "../components/Button.tsx";
+import { Form } from "../components/Form.tsx";
 
 export function LoginForm() {
   const queryClient = useQueryClient();
@@ -27,7 +28,7 @@ export function LoginForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit}>
+    <Form onSubmit={handleSubmit}>
       <Field
         label="E-posta"
         name="email"
@@ -48,7 +49,7 @@ export function LoginForm() {
       <Button busy={mutation.isPending}>
         {mutation.isPending ? "Giriş yapılıyor…" : "Giriş yap"}
       </Button>
-    </form>
+    </Form>
   );
 }
 

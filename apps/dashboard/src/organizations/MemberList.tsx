@@ -7,6 +7,7 @@ import {
   removeMember,
 } from "../api/organizations.ts";
 import { Button } from "../components/Button.tsx";
+import styles from "./MemberList.module.css";
 
 interface MemberListProps {
   organizationId: string;
@@ -53,8 +54,14 @@ export function MemberList({ organizationId, role }: MemberListProps) {
         const failed = removal.isError && removal.variables === member.userId;
         return (
           // Pessimistic on purpose: the row waits for the server and says so.
-          <li key={member.userId} style={{ opacity: removing ? 0.5 : 1 }}>
-            {member.email} <small>{member.role}</small>
+          <li
+            key={member.userId}
+            className={[styles.row, removing && styles.removing]
+              .filter(Boolean)
+              .join(" ")}
+          >
+            <span className={styles.email}>{member.email}</span>
+            <span className={styles.role}>{member.role}</span>
             {canRemove && (
               <Button
                 variant="danger"
@@ -66,7 +73,9 @@ export function MemberList({ organizationId, role }: MemberListProps) {
               </Button>
             )}
             {failed && (
-              <p role="alert">{describeError(removal.error, removeMessages)}</p>
+              <p role="alert" className={styles.error}>
+                {describeError(removal.error, removeMessages)}
+              </p>
             )}
           </li>
         );

@@ -3,6 +3,7 @@ import type { SubmitEvent } from "react";
 import { describeError, fieldErrors, isFormLevelError } from "../api/errors.ts";
 import { createOrganization, organizationKeys } from "../api/organizations.ts";
 import { Button } from "../components/Button.tsx";
+import { Form } from "../components/Form.tsx";
 import { Field } from "../components/Field.tsx";
 import { textField } from "../lib/form.ts";
 
@@ -33,7 +34,7 @@ export function CreateOrganizationForm() {
   const errors = fieldErrors(mutation.error);
 
   return (
-    <form onSubmit={handleSubmit}>
+    <Form onSubmit={handleSubmit}>
       <Field
         label="Organizasyon adı"
         name="name"
@@ -48,6 +49,6 @@ export function CreateOrganizationForm() {
       <Button busy={mutation.isPending}>
         {mutation.isPending ? "Oluşturuluyor…" : "Oluştur"}
       </Button>
-    </form>
+    </Form>
   );
 }

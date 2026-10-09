@@ -1,0 +1,10 @@
+.form {
+  display: grid;
+  gap: var(--space-4);
+  max-width: 28rem;
+}
+
+/* The submit button sits at the start, not stretched across the column. */
+.form > :last-child {
+  justify-self: start;
+}

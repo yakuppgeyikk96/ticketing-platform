@@ -1,0 +1,27 @@
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--color-border);
+  transition: opacity var(--duration-normal) var(--ease-out);
+}
+
+.row.removing {
+  opacity: 0.5;
+}
+
+.email {
+  flex: 1;
+}
+
+.role {
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+.error {
+  flex-basis: 100%;
+  color: var(--color-danger);
+  font-size: var(--text-sm);
+}

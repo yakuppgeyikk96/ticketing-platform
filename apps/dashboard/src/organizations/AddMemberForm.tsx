@@ -4,6 +4,7 @@ import { useId, type SubmitEvent } from "react";
 import { describeError, fieldErrors, isFormLevelError } from "../api/errors.ts";
 import { addMember, organizationKeys } from "../api/organizations.ts";
 import { Button } from "../components/Button.tsx";
+import { Form } from "../components/Form.tsx";
 import { Field } from "../components/Field.tsx";
 import { textField } from "../lib/form.ts";
 
@@ -48,7 +49,7 @@ export function AddMemberForm({ organizationId }: AddMemberFormProps) {
   const errors = fieldErrors(mutation.error);
 
   return (
-    <form onSubmit={handleSubmit}>
+    <Form onSubmit={handleSubmit}>
       <h3>Üye ekle</h3>
       <Field
         label="E-posta"
@@ -74,6 +75,6 @@ export function AddMemberForm({ organizationId }: AddMemberFormProps) {
       <Button busy={mutation.isPending}>
         {mutation.isPending ? "Ekleniyor…" : "Ekle"}
       </Button>
-    </form>
+    </Form>
   );
 }

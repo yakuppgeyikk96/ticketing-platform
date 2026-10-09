@@ -9,6 +9,7 @@ import {
 } from "../api/organizations.ts";
 import { AddMemberForm } from "./AddMemberForm.tsx";
 import { MemberList } from "./MemberList.tsx";
+import styles from "./OrganizationPage.module.css";
 
 export function OrganizationPage() {
   const { organizationId } = useParams();
@@ -50,23 +51,28 @@ export function OrganizationPage() {
 
   return (
     <>
-      <p>
+      <header className={styles.header}>
         <Link to="/organizations">← Organizasyonlarım</Link>
-      </p>
-      <h1>{organization.data.name}</h1>
-      <p>
-        <code>{organization.data.slug}</code> · rolün:{" "}
-        <strong>{organization.data.role}</strong>
-      </p>
+        <h1>{organization.data.name}</h1>
+        <p className={styles.meta}>
+          <code>{organization.data.slug}</code>
+          <span>rolün: {organization.data.role}</span>
+        </p>
+      </header>
 
-      <h2>Üyeler</h2>
-      <MemberList
-        organizationId={organizationId}
-        role={organization.data.role}
-      />
+      <section className={styles.section}>
+        <h2>Üyeler</h2>
+        <MemberList
+          organizationId={organizationId}
+          role={organization.data.role}
+        />
+      </section>
+
       {(organization.data.role === "owner" ||
         organization.data.role === "admin") && (
-        <AddMemberForm organizationId={organizationId} />
+        <section className={styles.section}>
+          <AddMemberForm organizationId={organizationId} />
+        </section>
       )}
     </>
   );
