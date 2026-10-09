@@ -1,13 +1,10 @@
-import { listMyOrganizations, organizationKeys } from "../api/organizations.ts";
+import { myOrganizationsQuery } from "../api/organizations.ts";
 import { describeError } from "../api/errors.ts";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router";
 
 export function OrganizationList() {
-  const query = useQuery({
-    queryKey: organizationKeys.mine(),
-    queryFn: listMyOrganizations,
-  });
+  const query = useQuery(myOrganizationsQuery);
 
   if (query.isPending) {
     return <p>Yükleniyor...</p>;

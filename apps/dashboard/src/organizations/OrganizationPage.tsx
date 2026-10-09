@@ -1,10 +1,11 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useParams } from "react-router";
 import { ApiError } from "../api/client.ts";
 import { describeError } from "../api/errors.ts";
 import {
   getOrganization,
   listMembers,
+  myOrganizationsQuery,
   organizationKeys,
 } from "../api/organizations.ts";
 
@@ -13,9 +14,17 @@ export function OrganizationPage() {
   // The route pattern guarantees the param; a missing one is a routing bug.
   if (!organizationId) throw new Error("route param organizationId missing");
 
+  const queryClient = useQueryClient();
   const organization = useQuery({
     queryKey: organizationKeys.detail(organizationId),
     queryFn: () => getOrganization(organizationId),
+    // Coming from the list, the same shape is already cached: show it at once.
+    // Placeholder, not initialData: the real answer is still fetched, and
+    // nothing from another query is written into this one's cache.
+    placeholderData: () =>
+      queryClient
+        .getQueryData(myOrganizationsQuery.queryKey)
+        ?.find((org) => org.id === organizationId),
   });
   const members = useQuery({
     queryKey: organizationKeys.members(organizationId),

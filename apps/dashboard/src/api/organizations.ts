@@ -8,6 +8,7 @@ import {
   type Organization,
   type UserOrganization,
 } from "@ticketing/contracts";
+import { queryOptions } from "@tanstack/react-query";
 import { request } from "./client.ts";
 
 export const organizationKeys = {
@@ -22,6 +23,13 @@ export async function listMyOrganizations(): Promise<UserOrganization[]> {
     response: userOrganizationsResponseSchema,
   });
 }
+
+// Key, fetcher and data type in one object: components consume it with
+// useQuery(myOrganizationsQuery) and read the cache with its typed queryKey.
+export const myOrganizationsQuery = queryOptions({
+  queryKey: organizationKeys.mine(),
+  queryFn: listMyOrganizations,
+});
 
 export async function getOrganization(
   organizationId: string,
