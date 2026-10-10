@@ -96,3 +96,80 @@ Decisions:
 - **Convention exception:** no `updated_at` here; `last_seen_at` is the only mutable timestamp and already says when the row was last touched.
 
 The per-request lookup: `where token_hash = $1 and revoked_at is null and expires_at > now()`, joined with `users` where `deleted_at is null`. The unique index finds the row; the other predicates are checked on that one row.
+
+## Catalog
+
+Three tables, one idea: an **event** is the poster, an **occurrence** is one dated happening of it at one venue, and tickets will attach to occurrences. An event by itself has no place and no time; it only has occurrences. A one-night concert is one event with one occurrence. A play with ten showtimes is one event with ten occurrences. A conference spread across two halls is one event with two occurrences at two venues. A three-day festival pass is a single occurrence whose `ends_at` is three days after `starts_at`.
+
+### venues
+
+A place an organization runs events in. Owned by the organization that created it; another organization using the same hall creates its own row.
+
+| column          | type        | constraints                           | note                                         |
+| --------------- | ----------- | ------------------------------------- | -------------------------------------------- |
+| id              | uuid        | pk, default uuidv7()                  |                                              |
+| organization_id | uuid        | fk organizations(id)                  | tenant                                       |
+| name            | text        | not null                              |                                              |
+| slug            | text        | not null, unique with organization_id | URL segment inside the organization          |
+| address         | text        | nullable                              | free text                                    |
+| city            | text        | nullable                              |                                              |
+| timezone        | text        | not null                              | IANA name, e.g. `Europe/Istanbul`; see below |
+| capacity        | integer     | nullable                              | informational; selling limits live elsewhere |
+| created_at      | timestamptz | not null, default now()               |                                              |
+| updated_at      | timestamptz | not null, default now()               |                                              |
+
+Extra constraint: `unique (organization_id, id)`. It looks redundant next to the primary key. It exists so that child tables can declare a composite foreign key to it (see occurrences); PostgreSQL only lets a foreign key point at a unique column set.
+
+`timezone` has no CHECK: the valid list is PostgreSQL's `pg_timezone_names` view, and a CHECK may not run a subquery. The API validates against `Intl.supportedValuesOf("timeZone")`.
+
+A venue referenced by occurrences cannot be deleted (`ON DELETE NO ACTION`). Online events are not modelled yet; when they are, a venue of kind `online` is the plan, not a nullable `venue_id`.
+
+### events
+
+The poster: what the public sees as one thing. No venue, no date.
+
+| column          | type        | constraints                                                            | note      |
+| --------------- | ----------- | ---------------------------------------------------------------------- | --------- |
+| id              | uuid        | pk, default uuidv7()                                                   |           |
+| organization_id | uuid        | fk organizations(id)                                                   | tenant    |
+| title           | text        | not null                                                               |           |
+| slug            | text        | not null, unique with organization_id                                  |           |
+| description     | text        | nullable                                                               |           |
+| status          | text        | not null, default `draft`, check in (`draft`, `published`, `archived`) | see below |
+| created_at      | timestamptz | not null, default now()                                                |           |
+| updated_at      | timestamptz | not null, default now()                                                |           |
+
+Same `unique (organization_id, id)` as venues, for the same reason.
+
+Status is the public visibility of the poster: `draft` is invisible, `published` is listed, `archived` is hidden but kept. An event with sold tickets is never deleted; it is archived. Whether a single occurrence can be bought is the occurrence's own status.
+
+### occurrences
+
+One happening of an event: where and when. This is what a ticket will reference.
+
+| column          | type        | constraints                                                                                | note                                       |
+| --------------- | ----------- | ------------------------------------------------------------------------------------------ | ------------------------------------------ |
+| id              | uuid        | pk, default uuidv7()                                                                       |                                            |
+| organization_id | uuid        | fk organizations(id)                                                                       | tenant, repeated on purpose                |
+| event_id        | uuid        | not null, part of composite fk                                                             |                                            |
+| venue_id        | uuid        | not null, part of composite fk                                                             |                                            |
+| starts_at       | timestamptz | not null                                                                                   | UTC instant; shown in the venue's timezone |
+| ends_at         | timestamptz | nullable, check `ends_at > starts_at`                                                      | multi-day passes set this                  |
+| status          | text        | not null, default `draft`, check in (`draft`, `on_sale`, `sold_out`, `cancelled`, `ended`) |                                            |
+| created_at      | timestamptz | not null, default now()                                                                    |                                            |
+| updated_at      | timestamptz | not null, default now()                                                                    |                                            |
+
+Indexes: `(event_id, starts_at)` for "showtimes of this event, in order", `(venue_id, starts_at)` for "what is on at this venue this week".
+
+**Composite foreign keys.** The two parent links are not `event_id → events(id)` and `venue_id → venues(id)`. They are
+
+```
+(organization_id, event_id) → events(organization_id, id)
+(organization_id, venue_id) → venues(organization_id, id)
+```
+
+With the plain form, nothing stops an occurrence of organization A's event from pointing at organization B's venue: a tenant leak the application would have to remember to check on every write. With the composite form the database refuses the row. `organization_id` is therefore repeated on every tenant table even where it could be derived through a join; the repetition is what makes the constraint, and the `where organization_id = $1` rule from `auth.md`, possible.
+
+**What the schema does not enforce.** Overlapping occurrences at the same venue are allowed (two organizations may rent the same hall; we cannot know). Recurring events are rows, not rules: "every Tuesday" becomes one occurrence per Tuesday. Per-occurrence capacity is not a column; selling limits will come with ticket types. Changing `venue_id` on an occurrence that already has sold tickets is a service-layer refusal, not a constraint.
+
+Deferred: a ticket type granting admission to several occurrences (a festival pass across venues) needs a join table between ticket types and occurrences. The occurrence table stays as it is when that arrives.
