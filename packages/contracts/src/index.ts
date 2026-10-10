@@ -152,6 +152,42 @@ export const venueParamsSchema = organizationParamsSchema.extend({
 
 export const venuesResponseSchema = z.array(venueSchema);
 
+// Third copy of the list on purpose: CHECK (database), Drizzle enum (TS), here (API).
+export const eventStatusSchema = z.enum(["draft", "published", "archived"]);
+export type EventStatus = z.infer<typeof eventStatusSchema>;
+
+export const createEventBodySchema = z.object({
+  title: z.string().trim().min(2).max(200).meta({ example: "Hamlet" }),
+  description: z.string().trim().max(5000).optional(),
+});
+
+export type CreateEventInput = z.input<typeof createEventBodySchema>;
+
+export const updateEventStatusBodySchema = z.object({
+  status: eventStatusSchema,
+});
+
+export type UpdateEventStatusInput = z.input<
+  typeof updateEventStatusBodySchema
+>;
+
+export const eventSchema = z.object({
+  id: z.uuid(),
+  organizationId: z.uuid(),
+  title: z.string(),
+  slug: z.string(),
+  description: z.string().nullable(),
+  status: eventStatusSchema,
+});
+
+export type Event = z.output<typeof eventSchema>;
+
+export const eventsResponseSchema = z.array(eventSchema);
+
+export const eventParamsSchema = organizationParamsSchema.extend({
+  eventId: z.uuid(),
+});
+
 // Named components in the generated OpenAPI document. This is zod's own
 // registry; the contracts package still knows nothing about the framework.
 z.globalRegistry.add(problemSchema, { id: "Problem" });
@@ -175,5 +211,10 @@ z.globalRegistry.add(addMemberBodySchema, {
 });
 z.globalRegistry.add(createVenueBodySchema, { id: "CreateVenueBody" });
 z.globalRegistry.add(venueSchema, { id: "Venue" });
+z.globalRegistry.add(createEventBodySchema, { id: "CreateEventBody" });
+z.globalRegistry.add(updateEventStatusBodySchema, {
+  id: "UpdateEventStatusBody",
+});
+z.globalRegistry.add(eventSchema, { id: "Event" });
 
 export * from "./slug/index.ts";

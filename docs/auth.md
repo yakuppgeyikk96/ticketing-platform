@@ -62,6 +62,9 @@ Who may do what. The split is "sets things up" (owner, admin) versus "works with
 | remove member              | yes   |       |       |
 | create venue               | yes   | yes   |       |
 | list, read venues          | yes   | yes   | yes   |
+| create event               | yes   | yes   |       |
+| change event status        | yes   | yes   |       |
+| list, read events          | yes   | yes   | yes   |
 
 Rows are added as routes arrive; the table is the source of truth for `requireRoles(...)` arguments.
 
