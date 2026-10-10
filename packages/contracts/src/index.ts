@@ -119,6 +119,39 @@ export const memberParamsSchema = organizationParamsSchema.extend({
   userId: z.uuid(),
 });
 
+export const validTimeZones = new Set(Intl.supportedValuesOf("timeZone"));
+
+export const createVenueBodySchema = z.object({
+  name: z.string().trim().min(2).max(100),
+  address: z.string().trim().max(300).optional(),
+  city: z.string().trim().max(100).optional(),
+  timezone: z.string().refine((tz) => validTimeZones.has(tz), {
+    message: "Unknown IANA time zone",
+  }),
+  capacity: z.int().positive().max(1_000_000).optional(),
+});
+
+export type CreateVenueInput = z.input<typeof createVenueBodySchema>;
+
+export const venueSchema = z.object({
+  id: z.uuid(),
+  organizationId: z.uuid(),
+  name: z.string(),
+  slug: z.string(),
+  address: z.string().nullable(),
+  city: z.string().nullable(),
+  timezone: z.string(),
+  capacity: z.int().nullable(),
+});
+
+export type Venue = z.output<typeof venueSchema>;
+
+export const venueParamsSchema = organizationParamsSchema.extend({
+  venueId: z.uuid(),
+});
+
+export const venuesResponseSchema = z.array(venueSchema);
+
 // Named components in the generated OpenAPI document. This is zod's own
 // registry; the contracts package still knows nothing about the framework.
 z.globalRegistry.add(problemSchema, { id: "Problem" });
@@ -140,5 +173,7 @@ z.globalRegistry.add(memberSchema, {
 z.globalRegistry.add(addMemberBodySchema, {
   id: "AddMemberBody",
 });
+z.globalRegistry.add(createVenueBodySchema, { id: "CreateVenueBody" });
+z.globalRegistry.add(venueSchema, { id: "Venue" });
 
 export * from "./slug/index.ts";

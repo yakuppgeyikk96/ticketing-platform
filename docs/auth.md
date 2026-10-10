@@ -53,6 +53,18 @@ Known debt: `AppError` carries the HTTP status, so services indirectly know HTTP
 
 Measured in `labs/04-tenant-leak.md` and `labs/04-row-lock.md`; attacks live in `apps/api/src/routes/tenant-isolation.test.ts`.
 
+Who may do what. The split is "sets things up" (owner, admin) versus "works with what exists" (staff):
+
+| action                     | owner | admin | staff |
+| -------------------------- | ----- | ----- | ----- |
+| read organization, members | yes   | yes   | yes   |
+| add member                 | yes   | yes   |       |
+| remove member              | yes   |       |       |
+| create venue               | yes   | yes   |       |
+| list, read venues          | yes   | yes   | yes   |
+
+Rows are added as routes arrive; the table is the source of truth for `requireRoles(...)` arguments.
+
 ## Browser security: how the dashboard talks to the API
 
 Two different gatekeepers: **origin** (scheme + host + port) decides whether JavaScript may read a response (same-origin policy, CORS); **site** (registrable domain, ports and subdomains ignored) decides whether a `SameSite` cookie is sent.

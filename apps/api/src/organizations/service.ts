@@ -13,6 +13,7 @@ import {
   ForbiddenError,
   NotFoundError,
 } from "../errors.ts";
+import { pickFreeSlug } from "../lib/slug.ts";
 
 export type MemberRole = (typeof organizationMembers.$inferSelect)["role"];
 
@@ -329,11 +330,5 @@ export async function findFreeSlug(db: Db, base: string): Promise<string> {
 
   const taken = new Set(rows.map((r) => r.slug));
 
-  if (!taken.has(base)) return base;
-
-  let n = 2;
-
-  while (taken.has(`${base}-${n}`)) n++;
-
-  return `${base}-${n}`;
+  return pickFreeSlug(base, taken);
 }
