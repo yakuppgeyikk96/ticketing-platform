@@ -188,6 +188,68 @@ export const eventParamsSchema = organizationParamsSchema.extend({
   eventId: z.uuid(),
 });
 
+export const occurrenceStatusSchema = z.enum([
+  "draft",
+  "on_sale",
+  "sold_out",
+  "cancelled",
+  "ended",
+]);
+export type OccurrenceStatus = z.infer<typeof occurrenceStatusSchema>;
+
+// Instants on the way in must carry an offset ("Z" or "+03:00"): a bare
+// local time has no meaning until someone picks a zone, and that someone
+// should be the client, which knows the venue's.
+const instantInputSchema = z.iso
+  .datetime({ offset: true })
+  .meta({ example: "2026-11-05T20:00:00+03:00" });
+
+export const createOccurrenceBodySchema = z
+  .object({
+    venueId: z.uuid(),
+    startsAt: instantInputSchema,
+    endsAt: instantInputSchema.optional(),
+  })
+  .superRefine((body, ctx) => {
+    if (!body.endsAt) return;
+    if (new Date(body.endsAt) <= new Date(body.startsAt)) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["endsAt"],
+        message: "endsAt must be after startsAt",
+      });
+    }
+  });
+
+export type CreateOccurrenceInput = z.input<typeof createOccurrenceBodySchema>;
+
+export const updateOccurrenceStatusBodySchema = z.object({
+  status: occurrenceStatusSchema,
+});
+
+export type UpdateOccurrenceStatusInput = z.input<
+  typeof updateOccurrenceStatusBodySchema
+>;
+
+export const occurrenceSchema = z.object({
+  id: z.uuid(),
+  organizationId: z.uuid(),
+  eventId: z.uuid(),
+  venueId: z.uuid(),
+  // Always UTC on the way out; the client renders it in the venue's zone.
+  startsAt: z.iso.datetime(),
+  endsAt: z.iso.datetime().nullable(),
+  status: occurrenceStatusSchema,
+});
+
+export type Occurrence = z.output<typeof occurrenceSchema>;
+
+export const occurrencesResponseSchema = z.array(occurrenceSchema);
+
+export const occurrenceParamsSchema = eventParamsSchema.extend({
+  occurrenceId: z.uuid(),
+});
+
 // Named components in the generated OpenAPI document. This is zod's own
 // registry; the contracts package still knows nothing about the framework.
 z.globalRegistry.add(problemSchema, { id: "Problem" });
@@ -216,5 +278,12 @@ z.globalRegistry.add(updateEventStatusBodySchema, {
   id: "UpdateEventStatusBody",
 });
 z.globalRegistry.add(eventSchema, { id: "Event" });
+z.globalRegistry.add(createOccurrenceBodySchema, {
+  id: "CreateOccurrenceBody",
+});
+z.globalRegistry.add(updateOccurrenceStatusBodySchema, {
+  id: "UpdateOccurrenceStatusBody",
+});
+z.globalRegistry.add(occurrenceSchema, { id: "Occurrence" });
 
 export * from "./slug/index.ts";
