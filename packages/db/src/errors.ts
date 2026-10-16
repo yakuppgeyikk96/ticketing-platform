@@ -1,22 +1,44 @@
 // packages/db/src/errors.ts
 import { DrizzleQueryError } from "drizzle-orm";
 
-// PostgreSQL SQLSTATE for unique_violation.
+// PostgreSQL SQLSTATE codes (class 23: integrity constraint violation).
 const UNIQUE_VIOLATION = "23505";
+const FOREIGN_KEY_VIOLATION = "23503";
 
 /**
- * True if `err` is (or wraps) a PostgreSQL unique-constraint violation.
- * Pass `constraint` to match a specific index or constraint name.
+ * True if `err` is (or wraps) a PostgreSQL constraint violation with the given
+ * SQLSTATE. Pass `constraint` to match a specific index or constraint name.
  */
-export function isUniqueViolation(err: unknown, constraint?: string): boolean {
+function isViolation(
+  code: string,
+  err: unknown,
+  constraint: string | undefined,
+): boolean {
   // Drizzle wraps the driver error; the real one is in `cause`.
   const cause = err instanceof DrizzleQueryError ? err.cause : err;
 
   if (!cause || typeof cause !== "object") return false;
-  if (!("code" in cause) || cause.code !== UNIQUE_VIOLATION) return false;
+  if (!("code" in cause) || cause.code !== code) return false;
 
   if (constraint === undefined) return true;
   return "constraint" in cause && cause.constraint === constraint;
+}
+
+/** Unique index or constraint violated; `constraint` narrows to one name. */
+export function isUniqueViolation(err: unknown, constraint?: string): boolean {
+  return isViolation(UNIQUE_VIOLATION, err, constraint);
+}
+
+/**
+ * Foreign key violated: the referenced row does not exist, or (composite
+ * keys) exists under another tenant. Raised by INSERT/UPDATE on the child,
+ * and by DELETE on a parent still referenced.
+ */
+export function isForeignKeyViolation(
+  err: unknown,
+  constraint?: string,
+): boolean {
+  return isViolation(FOREIGN_KEY_VIOLATION, err, constraint);
 }
 
 /**
