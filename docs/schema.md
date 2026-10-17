@@ -173,3 +173,17 @@ With the plain form, nothing stops an occurrence of organization A's event from 
 **What the schema does not enforce.** Overlapping occurrences at the same venue are allowed (two organizations may rent the same hall; we cannot know). Recurring events are rows, not rules: "every Tuesday" becomes one occurrence per Tuesday. Per-occurrence capacity is not a column; selling limits will come with ticket types. Changing `venue_id` on an occurrence that already has sold tickets is a service-layer refusal, not a constraint.
 
 Deferred: a ticket type granting admission to several occurrences (a festival pass across venues) needs a join table between ticket types and occurrences. The occurrence table stays as it is when that arrives.
+
+### Status machines
+
+The CHECK constraints know the allowed values; which value may follow which is the service's job, kept in one `Record<Status, Status[]>` per table so a new status is a compile error until it gets a row. A forbidden step answers `409 invalid-transition`; asking for the current status again is also a 409, not a no-op, because the client is acting on stale data.
+
+```
+events        draft → published → archived        published → draft allowed; archived is final
+occurrences   draft → on_sale → cancelled         on_sale → draft allowed; cancelled is final
+              sold_out, ended                     system-owned (stock, clock); not settable by hand yet
+```
+
+Cross-row rules: an occurrence goes `on_sale` only under a `published` event, and an `archived` event takes no new occurrences.
+
+**Row locks.** A status change reads the row `FOR UPDATE` and writes it in the same transaction, so two concurrent changes see each other. Creating an occurrence or changing its status reads the parent event `FOR SHARE`: the event must not change under us, but other readers may hold the same lock. `FOR SHARE` holders run in parallel; a `FOR UPDATE` (the archive) waits for all of them. Lock order is always event, then occurrence, so these paths cannot deadlock each other. Rule of thumb: lock `FOR UPDATE` what you will change, `FOR SHARE` what you rely on staying the same.
