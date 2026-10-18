@@ -8,6 +8,8 @@ import {
   organizationKeys,
 } from "../api/organizations.ts";
 import { AddMemberForm } from "./AddMemberForm.tsx";
+import { CreateEventForm } from "../events/CreateEventForm.tsx";
+import { EventList } from "../events/EventList.tsx";
 import { MemberList } from "./MemberList.tsx";
 import styles from "./OrganizationPage.module.css";
 
@@ -49,6 +51,9 @@ export function OrganizationPage() {
     );
   }
 
+  const canEdit =
+    organization.data.role === "owner" || organization.data.role === "admin";
+
   return (
     <>
       <header className={styles.header}>
@@ -61,6 +66,15 @@ export function OrganizationPage() {
       </header>
 
       <section className={styles.section}>
+        <h2>Etkinlikler</h2>
+        <EventList
+          organizationId={organizationId}
+          role={organization.data.role}
+        />
+        {canEdit && <CreateEventForm organizationId={organizationId} />}
+      </section>
+
+      <section className={styles.section}>
         <h2>Üyeler</h2>
         <MemberList
           organizationId={organizationId}
@@ -68,8 +82,7 @@ export function OrganizationPage() {
         />
       </section>
 
-      {(organization.data.role === "owner" ||
-        organization.data.role === "admin") && (
+      {canEdit && (
         <section className={styles.section}>
           <AddMemberForm organizationId={organizationId} />
         </section>
