@@ -13,6 +13,8 @@
   min-height: var(--control-height);
   padding: 0 var(--space-3);
   background: var(--color-surface);
+  /* Shared by <input> and <select>: text colour does not inherit into form controls. */
+  color: var(--color-text);
   border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-md);
   transition: border-color var(--duration-fast) var(--ease-out);

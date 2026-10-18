@@ -10,6 +10,8 @@ import {
 import { AddMemberForm } from "./AddMemberForm.tsx";
 import { CreateEventForm } from "../events/CreateEventForm.tsx";
 import { EventList } from "../events/EventList.tsx";
+import { CreateVenueForm } from "../venues/CreateVenueForm.tsx";
+import { VenueList } from "../venues/VenueList.tsx";
 import { MemberList } from "./MemberList.tsx";
 import styles from "./OrganizationPage.module.css";
 
@@ -72,6 +74,12 @@ export function OrganizationPage() {
           role={organization.data.role}
         />
         {canEdit && <CreateEventForm organizationId={organizationId} />}
+      </section>
+
+      <section className={styles.section}>
+        <h2>Mekânlar</h2>
+        <VenueList organizationId={organizationId} />
+        {canEdit && <CreateVenueForm organizationId={organizationId} />}
       </section>
 
       <section className={styles.section}>

@@ -19,7 +19,7 @@ export const eventKeys = {
     [...eventKeys.all(organizationId), eventId] as const,
 };
 
-function eventsBase(organizationId: string): string {
+export function eventsBase(organizationId: string): string {
   return `/organizations/${organizationId}/events`;
 }
 
