@@ -23,6 +23,12 @@ export const router = createBrowserRouter([
             .OrganizationPage,
         }),
       },
+      {
+        path: "/organizations/:organizationId/events/:eventId",
+        lazy: async () => ({
+          Component: (await import("./events/EventPage.tsx")).EventPage,
+        }),
+      },
     ],
   },
 ]);

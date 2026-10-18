@@ -1,0 +1,52 @@
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--color-border);
+  transition: opacity var(--duration-normal) var(--ease-out);
+}
+
+.row.changing {
+  opacity: 0.5;
+}
+
+.when {
+  flex: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.until {
+  color: var(--color-text-muted);
+}
+
+.venue {
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+.status {
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-full);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  background: var(--color-surface-raised);
+  color: var(--color-text-muted);
+}
+
+.on_sale {
+  background: var(--color-accent-subtle);
+  color: var(--color-accent);
+}
+
+.cancelled,
+.ended {
+  text-decoration: line-through;
+}
+
+.error {
+  flex-basis: 100%;
+  color: var(--color-danger);
+  font-size: var(--text-sm);
+}
