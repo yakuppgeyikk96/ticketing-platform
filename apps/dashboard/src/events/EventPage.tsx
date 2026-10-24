@@ -8,6 +8,7 @@ import {
   myOrganizationsQuery,
   organizationKeys,
 } from "../api/organizations.ts";
+import { CreateOccurrenceForm } from "../occurrences/CreateOccurrenceForm.tsx";
 import { OccurrenceList } from "../occurrences/OccurrenceList.tsx";
 import styles from "./EventPage.module.css";
 
@@ -54,6 +55,9 @@ export function EventPage() {
     );
   }
 
+  const role = organization.data?.role ?? "staff";
+  const canEdit = role === "owner" || role === "admin";
+
   return (
     <>
       <header className={styles.header}>
@@ -71,8 +75,14 @@ export function EventPage() {
         <OccurrenceList
           organizationId={organizationId}
           eventId={eventId}
-          role={organization.data?.role ?? "staff"}
+          role={role}
         />
+        {canEdit && (
+          <CreateOccurrenceForm
+            organizationId={organizationId}
+            eventId={eventId}
+          />
+        )}
       </section>
     </>
   );
