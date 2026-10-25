@@ -46,7 +46,7 @@ function organizationItems(organizationId: string): SidebarItem[] {
 }
 
 export function Sidebar() {
-  const organizationId = useCurrentOrganizationId();
+  const [organizationId] = useCurrentOrganizationId();
 
   return (
     <aside className="app-sidebar">
