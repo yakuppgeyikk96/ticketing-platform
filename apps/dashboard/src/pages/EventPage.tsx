@@ -1,22 +1,21 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link, useParams } from "react-router";
+import type { UserOrganization } from "@ticketing/contracts";
+import { Link, useOutletContext, useParams } from "react-router";
 import { ApiError } from "../api/client.ts";
 import { describeError } from "../api/errors.ts";
 import { eventKeys, eventsQuery, getEvent } from "../api/events.ts";
-import {
-  getOrganization,
-  myOrganizationsQuery,
-  organizationKeys,
-} from "../api/organizations.ts";
 import { CreateOccurrenceForm } from "../features/occurrences/CreateOccurrenceForm.tsx";
 import { OccurrenceList } from "../features/occurrences/OccurrenceList.tsx";
 import styles from "./EventPage.module.css";
 
 export function EventPage() {
-  const { organizationId, eventId } = useParams();
-  if (!organizationId || !eventId) {
-    throw new Error("route params organizationId/eventId missing");
-  }
+  const { organization } = useOutletContext<{
+    organization: UserOrganization;
+  }>();
+  const organizationId = organization.id;
+
+  const { eventId } = useParams();
+  if (!eventId) throw new Error("route param eventId missing");
 
   const queryClient = useQueryClient();
   const event = useQuery({
@@ -29,17 +28,6 @@ export function EventPage() {
         ?.find((e) => e.id === eventId),
   });
 
-  // The event does not carry the viewer's role; the organization does. Until it
-  // arrives the page behaves as the least privileged role and shows no buttons.
-  const organization = useQuery({
-    queryKey: organizationKeys.detail(organizationId),
-    queryFn: () => getOrganization(organizationId),
-    placeholderData: () =>
-      queryClient
-        .getQueryData(myOrganizationsQuery.queryKey)
-        ?.find((org) => org.id === organizationId),
-  });
-
   if (event.isPending) return <p>Yükleniyor…</p>;
 
   if (event.isError) {
@@ -50,18 +38,22 @@ export function EventPage() {
         <p role="alert">
           {notFound ? "Etkinlik bulunamadı." : describeError(event.error)}
         </p>
-        <Link to={`/organizations/${organizationId}`}>Organizasyona dön</Link>
+        <Link to={`/organizations/${organizationId}/events`}>
+          Etkinliklere dön
+        </Link>
       </>
     );
   }
 
-  const role = organization.data?.role ?? "staff";
-  const canEdit = role === "owner" || role === "admin";
+  const canEdit =
+    organization.role === "owner" || organization.role === "admin";
 
   return (
     <>
       <header className={styles.header}>
-        <Link to={`/organizations/${organizationId}`}>← Organizasyon</Link>
+        <Link to={`/organizations/${organizationId}/events`}>
+          ← Etkinlikler
+        </Link>
         <h1>{event.data.title}</h1>
         <p className={styles.meta}>
           <code>{event.data.slug}</code>
@@ -75,7 +67,7 @@ export function EventPage() {
         <OccurrenceList
           organizationId={organizationId}
           eventId={eventId}
-          role={role}
+          role={organization.role}
         />
         {canEdit && (
           <CreateOccurrenceForm

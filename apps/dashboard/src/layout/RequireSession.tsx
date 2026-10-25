@@ -2,7 +2,6 @@ import { Navigate, Outlet, useLocation } from "react-router";
 import { ApiError } from "../api/client.ts";
 import { Button } from "../components/Button.tsx";
 import { useSession } from "../features/auth/useSession.ts";
-import { Header } from "./Header.tsx";
 
 // Layout route: every page nested under it renders in <Outlet /> and may
 // assume a session exists. Protecting a page means placing it under this node.
@@ -32,12 +31,5 @@ export function RequireSession() {
     );
   }
 
-  return (
-    <div className="app-shell">
-      <Header />
-      <main className="app-main">
-        <Outlet />
-      </main>
-    </div>
-  );
+  return <Outlet />;
 }

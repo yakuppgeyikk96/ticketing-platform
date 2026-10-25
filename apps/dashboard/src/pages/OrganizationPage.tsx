@@ -1,100 +1,28 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link, useParams } from "react-router";
-import { ApiError } from "../api/client.ts";
-import { describeError } from "../api/errors.ts";
-import {
-  getOrganization,
-  myOrganizationsQuery,
-  organizationKeys,
-} from "../api/organizations.ts";
-import { CreateEventForm } from "../features/events/CreateEventForm.tsx";
-import { EventList } from "../features/events/EventList.tsx";
-import { AddMemberForm } from "../features/members/AddMemberForm.tsx";
-import { MemberList } from "../features/members/MemberList.tsx";
-import { CreateVenueForm } from "../features/venues/CreateVenueForm.tsx";
-import { VenueList } from "../features/venues/VenueList.tsx";
+import type { UserOrganization } from "@ticketing/contracts";
+import { Link, useOutletContext } from "react-router";
 import styles from "./OrganizationPage.module.css";
 
 export function OrganizationPage() {
-  const { organizationId } = useParams();
-  // The route pattern guarantees the param; a missing one is a routing bug.
-  if (!organizationId) throw new Error("route param organizationId missing");
-
-  const queryClient = useQueryClient();
-  const organization = useQuery({
-    queryKey: organizationKeys.detail(organizationId),
-    queryFn: () => getOrganization(organizationId),
-    // Coming from the list, the same shape is already cached: show it at once.
-    // Placeholder, not initialData: the real answer is still fetched, and
-    // nothing from another query is written into this one's cache.
-    placeholderData: () =>
-      queryClient
-        .getQueryData(myOrganizationsQuery.queryKey)
-        ?.find((org) => org.id === organizationId),
-  });
-
-  if (organization.isPending) {
-    return <p>Yükleniyor…</p>;
-  }
-
-  if (organization.isError) {
-    const notFound =
-      organization.error instanceof ApiError &&
-      organization.error.status === 404;
-    return (
-      <>
-        <p role="alert">
-          {notFound
-            ? "Organizasyon bulunamadı."
-            : describeError(organization.error)}
-        </p>
-        <Link to="/organizations">Organizasyonlarıma dön</Link>
-      </>
-    );
-  }
-
-  const canEdit =
-    organization.data.role === "owner" || organization.data.role === "admin";
+  const { organization } = useOutletContext<{
+    organization: UserOrganization;
+  }>();
 
   return (
     <>
       <header className={styles.header}>
         <Link to="/organizations">← Organizasyonlarım</Link>
-        <h1>{organization.data.name}</h1>
+        <h1>{organization.name}</h1>
         <p className={styles.meta}>
-          <code>{organization.data.slug}</code>
-          <span>rolün: {organization.data.role}</span>
+          <code>{organization.slug}</code>
+          <span>rolün: {organization.role}</span>
         </p>
       </header>
 
-      <section className={styles.section}>
-        <h2>Etkinlikler</h2>
-        <EventList
-          organizationId={organizationId}
-          role={organization.data.role}
-        />
-        {canEdit && <CreateEventForm organizationId={organizationId} />}
-      </section>
-
-      <section className={styles.section}>
-        <h2>Mekânlar</h2>
-        <VenueList organizationId={organizationId} />
-        {canEdit && <CreateVenueForm organizationId={organizationId} />}
-      </section>
-
-      <section className={styles.section}>
-        <h2>Üyeler</h2>
-        <MemberList
-          organizationId={organizationId}
-          role={organization.data.role}
-        />
-      </section>
-
-      {canEdit && (
-        <section className={styles.section}>
-          <AddMemberForm organizationId={organizationId} />
-        </section>
-      )}
+      <nav aria-label="Organizasyon bölümleri" className={styles.section}>
+        <Link to="events">Etkinlikler</Link>
+        <Link to="venues">Mekânlar</Link>
+        <Link to="members">Üyeler</Link>
+      </nav>
     </>
   );
 }

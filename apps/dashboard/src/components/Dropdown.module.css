@@ -1,0 +1,25 @@
+/* The trigger is a plain button: callers style its content (text, icon, avatar). */
+.trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+/* Popovers render in the top layer, so the panel is positioned from the
+   viewport; `top`/`left`/`right` are set per open from the trigger's rect. */
+.panel {
+  position: fixed;
+  inset: auto;
+  min-width: 12rem;
+  margin: 0;
+  padding: var(--space-2);
+  background: var(--color-surface-raised);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+}
