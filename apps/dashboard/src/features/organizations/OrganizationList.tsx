@@ -1,5 +1,5 @@
-import { myOrganizationsQuery } from "../api/organizations.ts";
-import { describeError } from "../api/errors.ts";
+import { myOrganizationsQuery } from "../../api/organizations.ts";
+import { describeError } from "../../api/errors.ts";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router";
 

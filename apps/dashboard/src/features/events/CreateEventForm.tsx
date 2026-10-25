@@ -1,12 +1,16 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { CreateEventInput } from "@ticketing/contracts";
-import { createEvent, eventKeys } from "../api/events.ts";
-import { Form } from "../components/Form.tsx";
-import { Field } from "../components/Field.tsx";
-import { describeError, fieldErrors, isFormLevelError } from "../api/errors.ts";
-import { Button } from "../components/Button.tsx";
+import { createEvent, eventKeys } from "../../api/events.ts";
+import { Form } from "../../components/Form.tsx";
+import { Field } from "../../components/Field.tsx";
+import {
+  describeError,
+  fieldErrors,
+  isFormLevelError,
+} from "../../api/errors.ts";
+import { Button } from "../../components/Button.tsx";
 import type { SubmitEvent } from "react";
-import { textField } from "../lib/form.ts";
+import { textField } from "../../lib/form.ts";
 
 export function CreateEventForm({
   organizationId,

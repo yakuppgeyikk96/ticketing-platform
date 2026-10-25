@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import { describeError } from "../api/errors.ts";
-import { venuesQuery } from "../api/venues.ts";
+import { describeError } from "../../api/errors.ts";
+import { venuesQuery } from "../../api/venues.ts";
 import styles from "./VenueList.module.css";
 
 const people = new Intl.NumberFormat("tr-TR");

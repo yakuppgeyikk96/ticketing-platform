@@ -1,0 +1,19 @@
+/* Layout comes from the Form primitive; this module only adjusts what a
+   login card needs: a full-width submit and a boxed form-level error. */
+.form {
+  max-width: none;
+}
+
+/* Beats Form's `.form > :last-child { justify-self: start }` by specificity,
+   not by import order. */
+.form > .submit {
+  justify-self: stretch;
+}
+
+.error {
+  padding: var(--space-3);
+  font-size: var(--text-sm);
+  color: var(--color-danger);
+  background: var(--color-danger-subtle);
+  border-radius: var(--radius-md);
+}

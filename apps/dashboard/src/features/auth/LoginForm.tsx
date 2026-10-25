@@ -1,12 +1,13 @@
 import type { SubmitEvent } from "react";
-import { login } from "../api/auth.ts";
-import { describeError } from "../api/errors.ts";
-import { textField } from "../lib/form.ts";
+import { login } from "../../api/auth.ts";
+import { describeError } from "../../api/errors.ts";
+import { textField } from "../../lib/form.ts";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { sessionKey } from "./session.ts";
-import { Field } from "../components/Field.tsx";
-import { Button } from "../components/Button.tsx";
-import { Form } from "../components/Form.tsx";
+import { sessionKey } from "../../features/auth/useSession.ts";
+import { Field } from "../../components/Field.tsx";
+import { Button } from "../../components/Button.tsx";
+import { Form } from "../../components/Form.tsx";
+import styles from "./LoginForm.module.css";
 
 export function LoginForm() {
   const queryClient = useQueryClient();
@@ -28,7 +29,7 @@ export function LoginForm() {
   }
 
   return (
-    <Form onSubmit={handleSubmit}>
+    <Form onSubmit={handleSubmit} className={styles.form}>
       <Field
         label="E-posta"
         name="email"
@@ -44,9 +45,11 @@ export function LoginForm() {
         required
       />
       {mutation.isError && (
-        <p role="alert">{describeError(mutation.error, loginMessages)}</p>
+        <p role="alert" className={styles.error}>
+          {describeError(mutation.error, loginMessages)}
+        </p>
       )}
-      <Button busy={mutation.isPending}>
+      <Button busy={mutation.isPending} className={styles.submit}>
         {mutation.isPending ? "Giriş yapılıyor…" : "Giriş yap"}
       </Button>
     </Form>

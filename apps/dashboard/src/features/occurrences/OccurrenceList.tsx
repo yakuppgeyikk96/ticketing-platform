@@ -1,13 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { MemberRole, OccurrenceStatus, Venue } from "@ticketing/contracts";
-import { describeError } from "../api/errors.ts";
+import { describeError } from "../../api/errors.ts";
 import {
   occurrenceKeys,
   occurrencesQuery,
   updateOccurrenceStatus,
-} from "../api/occurrences.ts";
-import { venuesQuery } from "../api/venues.ts";
-import { Button } from "../components/Button.tsx";
+} from "../../api/occurrences.ts";
+import { venuesQuery } from "../../api/venues.ts";
+import { Button } from "../../components/Button.tsx";
 import styles from "./OccurrenceList.module.css";
 
 interface OccurrenceListProps {

@@ -7,12 +7,12 @@ import {
   myOrganizationsQuery,
   organizationKeys,
 } from "../api/organizations.ts";
-import { AddMemberForm } from "./AddMemberForm.tsx";
-import { CreateEventForm } from "../events/CreateEventForm.tsx";
-import { EventList } from "../events/EventList.tsx";
-import { CreateVenueForm } from "../venues/CreateVenueForm.tsx";
-import { VenueList } from "../venues/VenueList.tsx";
-import { MemberList } from "./MemberList.tsx";
+import { CreateEventForm } from "../features/events/CreateEventForm.tsx";
+import { EventList } from "../features/events/EventList.tsx";
+import { AddMemberForm } from "../features/members/AddMemberForm.tsx";
+import { MemberList } from "../features/members/MemberList.tsx";
+import { CreateVenueForm } from "../features/venues/CreateVenueForm.tsx";
+import { VenueList } from "../features/venues/VenueList.tsx";
 import styles from "./OrganizationPage.module.css";
 
 export function OrganizationPage() {

@@ -8,8 +8,8 @@ import {
   myOrganizationsQuery,
   organizationKeys,
 } from "../api/organizations.ts";
-import { CreateOccurrenceForm } from "../occurrences/CreateOccurrenceForm.tsx";
-import { OccurrenceList } from "../occurrences/OccurrenceList.tsx";
+import { CreateOccurrenceForm } from "../features/occurrences/CreateOccurrenceForm.tsx";
+import { OccurrenceList } from "../features/occurrences/OccurrenceList.tsx";
 import styles from "./EventPage.module.css";
 
 export function EventPage() {

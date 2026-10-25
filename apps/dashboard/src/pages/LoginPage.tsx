@@ -1,6 +1,7 @@
 import { Navigate, useLocation } from "react-router";
-import { LoginForm } from "./LoginForm.tsx";
-import { useSession } from "./session.ts";
+import { useSession } from "../features/auth/useSession.ts";
+import { LoginForm } from "../features/auth/LoginForm.tsx";
+import styles from "./LoginPage.module.css";
 
 export function LoginPage() {
   const session = useSession();
@@ -14,7 +15,21 @@ export function LoginPage() {
     );
   }
 
-  return <LoginForm />;
+  return (
+    <main className={styles.page}>
+      <section className={styles.card} aria-labelledby="login-title">
+        <header className={styles.header}>
+          <h1 id="login-title" className={styles.title}>
+            Giriş yap
+          </h1>
+          <p className={styles.subtitle}>
+            Devam etmek için hesabınızla giriş yapın.
+          </p>
+        </header>
+        <LoginForm />
+      </section>
+    </main>
+  );
 }
 
 // location.state is unknown: it comes from history, not from our types.

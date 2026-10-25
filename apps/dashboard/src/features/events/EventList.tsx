@@ -1,10 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { EventStatus, MemberRole } from "@ticketing/contracts";
 import { Link } from "react-router";
-import { eventKeys, eventsQuery, updateEventStatus } from "../api/events.ts";
-import { describeError } from "../api/errors.ts";
-import { Button } from "../components/Button.tsx";
 import styles from "./EventList.module.css";
+import { eventKeys, eventsQuery, updateEventStatus } from "../../api/events.ts";
+import { describeError } from "../../api/errors.ts";
+import { Button } from "../../components/Button.tsx";
 
 interface EventListProps {
   organizationId: string;

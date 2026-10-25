@@ -1,12 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { MemberRole } from "@ticketing/contracts";
-import { describeError } from "../api/errors.ts";
+import { describeError } from "../../api/errors.ts";
 import {
   listMembers,
   organizationKeys,
   removeMember,
-} from "../api/organizations.ts";
-import { Button } from "../components/Button.tsx";
+} from "../../api/organizations.ts";
+import { Button } from "../../components/Button.tsx";
 import styles from "./MemberList.module.css";
 
 interface MemberListProps {
