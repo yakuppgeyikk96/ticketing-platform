@@ -7,7 +7,7 @@
   border-radius: var(--radius-lg);
   background: var(--color-surface-raised);
   color: var(--color-text);
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-lg);
 }
 
 .top {
@@ -15,7 +15,7 @@
 }
 
 .dialog::backdrop {
-  background: oklch(0% 0 0 / 0.5);
+  background: var(--color-overlay);
 }
 
 .content {
