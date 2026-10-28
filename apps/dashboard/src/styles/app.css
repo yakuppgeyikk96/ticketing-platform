@@ -52,5 +52,9 @@
     width: min(100% - 2 * var(--space-6), var(--content-max));
     margin-inline: auto;
     padding-block: var(--space-8);
+    /* Page rhythm: header, toolbar, content stack with one gap. */
+    display: grid;
+    align-content: start;
+    gap: var(--space-6);
   }
 }
