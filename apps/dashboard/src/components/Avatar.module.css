@@ -1,6 +1,12 @@
 .avatar {
-  display: flex;
-  justify-content: center;
+  display: inline-flex;
   align-items: center;
-  height: auto;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: var(--radius-full);
+  background: var(--color-accent-subtle);
+  color: var(--color-accent);
+  font-weight: var(--weight-semibold);
+  line-height: 1;
+  letter-spacing: var(--tracking-wide);
 }

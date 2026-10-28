@@ -5,6 +5,7 @@ import { Button } from "../components/Button.tsx";
 import { Dropdown } from "../components/Dropdown.tsx";
 import { Avatar } from "../components/Avatar.tsx";
 import { IconMenu } from "../components/icons/IconMenu.tsx";
+import { useSession } from "../features/auth/useSession.ts";
 import { OrganizationsDropdown } from "../features/organizations/OrganizationsDropdown.tsx";
 
 interface HeaderProps {
@@ -14,6 +15,7 @@ interface HeaderProps {
 export function Header({ onToggleSidebar }: HeaderProps) {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const session = useSession();
 
   const logoutMutation = useMutation({
     mutationFn: logout,
@@ -28,13 +30,23 @@ export function Header({ onToggleSidebar }: HeaderProps) {
 
   return (
     <header className="app-header">
-      <div className="app-header-left">
-        <Button type="button" variant="icon" onClick={onToggleSidebar}>
-          <IconMenu />
+      <div className="app-header-group">
+        <Button
+          type="button"
+          variant="icon"
+          aria-label="Menüyü aç/kapat"
+          onClick={onToggleSidebar}
+        >
+          <IconMenu size="20" />
         </Button>
+        <span className="app-brand">Ticketing</span>
+        <span className="app-header-divider" aria-hidden="true" />
         <OrganizationsDropdown />
       </div>
-      <Dropdown label="Profile" trigger={<Avatar />}>
+      <Dropdown
+        label="Hesap menüsü"
+        trigger={<Avatar name={session.data?.email} />}
+      >
         <Dropdown.Item
           danger
           onClick={() => logoutMutation.mutate()}

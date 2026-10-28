@@ -50,8 +50,13 @@
 }
 
 .icon {
-  background: transparent;
+  width: var(--control-height);
   padding: 0;
+  background: transparent;
+  color: var(--color-text);
+}
+.icon:not(:disabled):hover {
+  background: var(--color-surface-muted);
 }
 
 .leading {
