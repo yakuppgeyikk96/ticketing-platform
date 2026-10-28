@@ -15,7 +15,10 @@ export function OrganizationsPage() {
       <PageHeader title="Organizasyonlarım" />
       <Toolbar
         end={
-          <Button icon={<IconPlus size="16" />} onClick={() => setCreating(true)}>
+          <Button
+            icon={<IconPlus size="16" />}
+            onClick={() => setCreating(true)}
+          >
             Yeni organizasyon
           </Button>
         }
