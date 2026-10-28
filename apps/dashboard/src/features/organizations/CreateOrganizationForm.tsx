@@ -14,7 +14,13 @@ import { Form } from "../../components/Form.tsx";
 import { Field } from "../../components/Field.tsx";
 import { textField } from "../../lib/form.ts";
 
-export function CreateOrganizationForm() {
+interface CreateOrganizationFormProps {
+  onSuccess?: () => void;
+}
+
+export function CreateOrganizationForm({
+  onSuccess,
+}: CreateOrganizationFormProps) {
   const queryClient = useQueryClient();
 
   const mutation = useMutation({
@@ -33,7 +39,12 @@ export function CreateOrganizationForm() {
     mutation.mutate(
       { name: textField(new FormData(form), "name") },
       // Runs for this call only, and only if the component is still mounted.
-      { onSuccess: () => form.reset() },
+      {
+        onSuccess: () => {
+          form.reset();
+          onSuccess?.();
+        },
+      },
     );
   }
 

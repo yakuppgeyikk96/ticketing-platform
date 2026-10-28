@@ -3,7 +3,22 @@ import { describeError } from "../../api/errors.ts";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router";
 
-import styles from "./OrganizationList.module.css";
+import { Table, type TableColumn } from "../../components/Table.tsx";
+import type { UserOrganization } from "@ticketing/contracts";
+
+const columns: TableColumn<UserOrganization>[] = [
+  {
+    key: "name",
+    title: "Ad",
+    render: (name, org) => <Link to={`/organizations/${org.id}`}>{name}</Link>,
+  },
+  {
+    key: "slug",
+    title: "Slug",
+    render: (slug: string) => <code>{slug}</code>,
+  },
+  { key: "role", title: "Rolün" },
+];
 
 export function OrganizationList() {
   const query = useQuery(myOrganizationsQuery);
@@ -16,18 +31,5 @@ export function OrganizationList() {
     return <p role="alert">{describeError(query.error)}</p>;
   }
 
-  if (query.data.length === 0) {
-    return <p>Henüz bir organizasyonun yok.</p>;
-  }
-
-  return (
-    <ul role="list">
-      {query.data.map((org) => (
-        <li key={org.id} className={styles.row}>
-          <Link to={`/organizations/${org.id}`}>{org.name}</Link>{" "}
-          <small>{org.role}</small>
-        </li>
-      ))}
-    </ul>
-  );
+  return <Table columns={columns} data={query.data} rowKey="id" />;
 }
