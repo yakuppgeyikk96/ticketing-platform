@@ -1,3 +1,8 @@
+.root {
+  display: grid;
+  gap: var(--space-3);
+}
+
 .wrapper {
   overflow-x: auto;
   border: 1px solid var(--color-border);
@@ -41,8 +46,31 @@
   border-bottom: 0;
 }
 
+/* Action columns: tighter, so a 32px button does not stretch the row. */
+.table td.end {
+  padding-block: var(--space-2);
+}
+
+.end {
+  text-align: end;
+}
+
 .empty {
   padding-block: var(--space-8);
   text-align: center;
   color: var(--color-text-muted);
+}
+
+.footer {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
 }

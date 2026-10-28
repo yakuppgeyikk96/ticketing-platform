@@ -1,0 +1,12 @@
+.name {
+  font-weight: var(--weight-medium);
+  text-decoration: none;
+}
+
+.name:hover {
+  text-decoration: underline;
+}
+
+.slug {
+  color: var(--color-text-muted);
+}
