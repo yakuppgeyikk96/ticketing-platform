@@ -95,7 +95,9 @@ export function OrganizationList({ query = "" }: OrganizationListProps) {
       data={rows}
       rowKey="id"
       emptyMessage={
-        filtered ? "Aramayla eşleşen organizasyon yok." : "Henüz bir organizasyonun yok."
+        filtered
+          ? "Aramayla eşleşen organizasyon yok."
+          : "Henüz bir organizasyonun yok."
       }
       footer={
         filtered

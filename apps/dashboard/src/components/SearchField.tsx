@@ -4,8 +4,10 @@ import fieldStyles from "./Field.module.css";
 import { IconSearch } from "./icons/IconSearch.tsx";
 import styles from "./SearchField.module.css";
 
-interface SearchFieldProps
-  extends Omit<ComponentProps<"input">, "id" | "type" | "value" | "onChange"> {
+interface SearchFieldProps extends Omit<
+  ComponentProps<"input">,
+  "id" | "type" | "value" | "onChange"
+> {
   // The visible placeholder doubles as the accessible name.
   label: string;
   value: string;
