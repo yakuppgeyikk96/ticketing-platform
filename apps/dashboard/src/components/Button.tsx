@@ -1,4 +1,4 @@
-import type { ComponentProps } from "react";
+import type { ComponentProps, ReactNode } from "react";
 import styles from "./Button.module.css";
 import { cx } from "../lib/cx.ts";
 
@@ -6,11 +6,14 @@ interface ButtonProps extends ComponentProps<"button"> {
   variant?: "primary" | "secondary" | "danger" | "icon";
   // A mutation in flight: disables the button and tells assistive tech why.
   busy?: boolean;
+  // Leading icon, rendered before the label.
+  icon?: ReactNode;
 }
 
 export function Button({
   variant = "primary",
   busy = false,
+  icon,
   className,
   children,
   disabled,
@@ -26,6 +29,7 @@ export function Button({
       disabled={busy || disabled}
       aria-busy={busy || undefined}
     >
+      {icon && <span className={styles.leading}>{icon}</span>}
       {children}
     </button>
   );

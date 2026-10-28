@@ -53,3 +53,9 @@
   background: transparent;
   padding: 0;
 }
+
+.leading {
+  display: inline-flex;
+  /* Pull the icon slightly towards the edge so the label stays optically centred. */
+  margin-inline-start: calc(-1 * var(--space-1));
+}
