@@ -1,0 +1,34 @@
+.search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 20rem;
+  max-width: 100%;
+}
+
+.icon {
+  position: absolute;
+  left: var(--space-3);
+  display: inline-flex;
+  color: var(--color-text-muted);
+  pointer-events: none;
+}
+
+.input {
+  width: 100%;
+  padding-inline-start: calc(var(--space-3) + 16px + var(--space-2));
+  font-size: var(--text-sm);
+}
+
+.input::placeholder {
+  color: var(--color-text-muted);
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}

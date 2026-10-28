@@ -7,7 +7,13 @@ import { ActionMenu } from "../../components/ActionMenu.tsx";
 import { Badge } from "../../components/Badge.tsx";
 import { Dropdown } from "../../components/Dropdown.tsx";
 import { Table, type TableColumn } from "../../components/Table.tsx";
+import { matchesQuery } from "../../lib/search.ts";
 import styles from "./OrganizationList.module.css";
+
+interface OrganizationListProps {
+  // Toolbar search text; filtered here, on the client, the list is small.
+  query?: string;
+}
 
 const roleVariant: Record<MemberRole, "accent" | "neutral"> = {
   owner: "accent",
@@ -15,8 +21,8 @@ const roleVariant: Record<MemberRole, "accent" | "neutral"> = {
   staff: "neutral",
 };
 
-export function OrganizationList() {
-  const query = useQuery(myOrganizationsQuery);
+export function OrganizationList({ query = "" }: OrganizationListProps) {
+  const organizations = useQuery(myOrganizationsQuery);
   const navigate = useNavigate();
 
   // Inside the component: the actions column needs `navigate`.
@@ -70,21 +76,32 @@ export function OrganizationList() {
     },
   ];
 
-  if (query.isPending) {
+  if (organizations.isPending) {
     return <p>Yükleniyor...</p>;
   }
 
-  if (query.isError) {
-    return <p role="alert">{describeError(query.error)}</p>;
+  if (organizations.isError) {
+    return <p role="alert">{describeError(organizations.error)}</p>;
   }
+
+  const rows = organizations.data.filter((org) =>
+    matchesQuery(query, org.name, org.slug),
+  );
+  const filtered = rows.length !== organizations.data.length;
 
   return (
     <Table
       columns={columns}
-      data={query.data}
+      data={rows}
       rowKey="id"
-      emptyMessage="Henüz bir organizasyonun yok."
-      footer={`${query.data.length} organizasyon`}
+      emptyMessage={
+        filtered ? "Aramayla eşleşen organizasyon yok." : "Henüz bir organizasyonun yok."
+      }
+      footer={
+        filtered
+          ? `${rows.length} / ${organizations.data.length} organizasyon`
+          : `${rows.length} organizasyon`
+      }
     />
   );
 }
