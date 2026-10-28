@@ -1,0 +1,41 @@
+.dialog {
+  /* The reset zeroes margins; `auto` is what centres a modal dialog. */
+  margin: auto;
+  width: min(100% - 2 * var(--space-6), 32rem);
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-raised);
+  color: var(--color-text);
+  box-shadow: var(--shadow-md);
+}
+
+.top {
+  margin-top: var(--space-16);
+}
+
+.dialog::backdrop {
+  background: oklch(0% 0 0 / 0.5);
+}
+
+.content {
+  display: grid;
+  gap: var(--space-6);
+  padding: var(--space-6);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.title {
+  font-size: var(--text-lg);
+}
+
+.body {
+  display: grid;
+  gap: var(--space-4);
+}
