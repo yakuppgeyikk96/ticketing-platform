@@ -14,7 +14,10 @@ export function OrganizationsPage() {
 
   return (
     <>
-      <PageHeader title="Organizasyonlarım" />
+      <PageHeader
+        title="Organizasyonlarım"
+        description="Üyesi olduğun organizasyonlar. Birini seçince kenar çubuğu onun bölümlerini gösterir."
+      />
       <Toolbar
         start={
           <SearchField
@@ -39,7 +42,10 @@ export function OrganizationsPage() {
         onClose={() => setCreating(false)}
         title="Yeni organizasyon"
       >
-        <CreateOrganizationForm onSuccess={() => setCreating(false)} />
+        <CreateOrganizationForm
+          onSuccess={() => setCreating(false)}
+          onCancel={() => setCreating(false)}
+        />
       </Dialog>
     </>
   );

@@ -16,10 +16,13 @@ import { textField } from "../../lib/form.ts";
 
 interface CreateOrganizationFormProps {
   onSuccess?: () => void;
+  // Given when the form sits in a dialog: shows a "Vazgeç" button.
+  onCancel?: () => void;
 }
 
 export function CreateOrganizationForm({
   onSuccess,
+  onCancel,
 }: CreateOrganizationFormProps) {
   const queryClient = useQueryClient();
 
@@ -59,14 +62,23 @@ export function CreateOrganizationForm({
         required
         minLength={2}
         maxLength={100}
+        autoFocus
+        hint="Slug addan türetilir ve sonradan değiştirilemez."
         error={errors.name}
       />
       {mutation.isError && isFormLevelError(mutation.error) && (
-        <p role="alert">{describeError(mutation.error)}</p>
+        <Form.Error>{describeError(mutation.error)}</Form.Error>
       )}
-      <Button busy={mutation.isPending}>
-        {mutation.isPending ? "Oluşturuluyor…" : "Oluştur"}
-      </Button>
+      <Form.Actions>
+        {onCancel && (
+          <Button type="button" variant="secondary" onClick={onCancel}>
+            Vazgeç
+          </Button>
+        )}
+        <Button busy={mutation.isPending}>
+          {mutation.isPending ? "Oluşturuluyor…" : "Oluştur"}
+        </Button>
+      </Form.Actions>
     </Form>
   );
 }

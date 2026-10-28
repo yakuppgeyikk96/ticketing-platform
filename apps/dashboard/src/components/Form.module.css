@@ -4,7 +4,24 @@
   max-width: 28rem;
 }
 
-/* The submit button sits at the start, not stretched across the column. */
+/* A lone submit button sits at the start, not stretched across the column. */
 .form > :last-child {
   justify-self: start;
+}
+
+/* An actions row spans the column and packs its buttons to the end. */
+.form > .actions {
+  justify-self: stretch;
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  margin-block-start: var(--space-2);
+}
+
+.error {
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--color-danger-subtle);
+  color: var(--color-danger-strong);
+  font-size: var(--text-sm);
 }
