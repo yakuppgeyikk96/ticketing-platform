@@ -1,36 +1,43 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { EventStatus, MemberRole } from "@ticketing/contracts";
+import type { Event, EventStatus, MemberRole } from "@ticketing/contracts";
 import { Link } from "react-router";
 import styles from "./EventList.module.css";
 import { eventKeys, eventsQuery, updateEventStatus } from "../../api/events.ts";
 import { describeError } from "../../api/errors.ts";
-import { Button } from "../../components/Button.tsx";
+import { ActionMenu } from "../../components/ActionMenu.tsx";
+import { Badge, type BadgeProps } from "../../components/Badge.tsx";
+import { Dropdown } from "../../components/Dropdown.tsx";
+import { Table, type TableColumn } from "../../components/Table.tsx";
+import { matchesQuery } from "../../lib/search.ts";
+
+export type EventStatusFilter = EventStatus | "all";
 
 interface EventListProps {
   organizationId: string;
   // The caller's role, for showing or hiding controls. The server decides for real.
   role: MemberRole;
+  query?: string;
+  status?: EventStatusFilter;
 }
 
-const statusLabels: Record<EventStatus, string> = {
-  draft: "Taslak",
-  published: "Yayında",
-  archived: "Arşiv",
+const statusLabels: Record<
+  EventStatus,
+  { label: string; variant: NonNullable<BadgeProps["variant"]> }
+> = {
+  draft: { label: "Taslak", variant: "warning" },
+  published: { label: "Yayında", variant: "success" },
+  archived: { label: "Arşiv", variant: "neutral" },
 };
 
-// UI copy of the service's transition table: which buttons each status shows.
+// UI copy of the service's transition table: which actions each status offers.
 const actions: Record<
   EventStatus,
-  readonly {
-    to: EventStatus;
-    label: string;
-    variant: "primary" | "secondary" | "danger";
-  }[]
+  readonly { to: EventStatus; label: string; danger?: boolean }[]
 > = {
-  draft: [{ to: "published", label: "Yayınla", variant: "primary" }],
+  draft: [{ to: "published", label: "Yayınla" }],
   published: [
-    { to: "draft", label: "Taslağa çek", variant: "secondary" },
-    { to: "archived", label: "Arşivle", variant: "danger" },
+    { to: "draft", label: "Taslağa çek" },
+    { to: "archived", label: "Arşivle", danger: true },
   ],
   archived: [],
 };
@@ -40,7 +47,12 @@ const statusMessages = {
     "Etkinlik bu arada değişmiş; liste yenilendi, tekrar dene",
 };
 
-export function EventList({ organizationId, role }: EventListProps) {
+export function EventList({
+  organizationId,
+  role,
+  query = "",
+  status = "all",
+}: EventListProps) {
   const queryClient = useQueryClient();
 
   const events = useQuery(eventsQuery(organizationId));
@@ -60,6 +72,73 @@ export function EventList({ organizationId, role }: EventListProps) {
       }),
   });
 
+  const canEdit = role === "owner" || role === "admin";
+
+  const columns: TableColumn<Event>[] = [
+    {
+      key: "title",
+      title: "Etkinlik",
+      render: (title: string, event) => {
+        const failed =
+          statusChange.isError && statusChange.variables.eventId === event.id;
+        return (
+          <div className={styles.cell}>
+            <Link
+              to={`/organizations/${organizationId}/events/${event.id}`}
+              className={styles.title}
+            >
+              {title}
+            </Link>
+            <code className={styles.slug}>{event.slug}</code>
+            {failed && (
+              <p role="alert" className={styles.error}>
+                {describeError(statusChange.error, statusMessages)}
+              </p>
+            )}
+          </div>
+        );
+      },
+    },
+    {
+      key: "status",
+      title: "Durum",
+      render: (status: EventStatus) => (
+        <Badge variant={statusLabels[status].variant} dot>
+          {statusLabels[status].label}
+        </Badge>
+      ),
+    },
+  ];
+
+  if (canEdit) {
+    columns.push({
+      id: "actions",
+      title: "İşlemler",
+      hideTitle: true,
+      align: "end",
+      render: (event: Event) => {
+        const available = actions[event.status];
+        if (available.length === 0) return null;
+        return (
+          <ActionMenu label={`${event.title} işlemleri`}>
+            {available.map((action) => (
+              <Dropdown.Item
+                key={action.to}
+                danger={action.danger ?? false}
+                disabled={statusChange.isPending}
+                onClick={() =>
+                  statusChange.mutate({ eventId: event.id, status: action.to })
+                }
+              >
+                {action.label}
+              </Dropdown.Item>
+            ))}
+          </ActionMenu>
+        );
+      },
+    });
+  }
+
   if (events.isPending) {
     return <p>Yükleniyor…</p>;
   }
@@ -68,59 +147,31 @@ export function EventList({ organizationId, role }: EventListProps) {
     return <p role="alert">{describeError(events.error)}</p>;
   }
 
-  if (events.data.length === 0) {
-    return <p>Henüz etkinlik yok.</p>;
-  }
-
-  const canEdit = role === "owner" || role === "admin";
+  const rows = events.data.filter(
+    (event) =>
+      (status === "all" || event.status === status) &&
+      matchesQuery(query, event.title, event.slug, event.description ?? ""),
+  );
+  const filtered = rows.length !== events.data.length;
 
   return (
-    <ul role="list">
-      {events.data.map((event) => {
-        const inFlight = statusChange.variables?.eventId === event.id;
-        const changing = statusChange.isPending && inFlight;
-        const failed = statusChange.isError && inFlight;
-        return (
-          <li
-            key={event.id}
-            className={[styles.row, changing && styles.changing]
-              .filter(Boolean)
-              .join(" ")}
-          >
-            <Link
-              to={`/organizations/${organizationId}/events/${event.id}`}
-              className={styles.title}
-            >
-              {event.title}
-            </Link>
-            <span className={[styles.status, styles[event.status]].join(" ")}>
-              {statusLabels[event.status]}
-            </span>
-            {canEdit &&
-              actions[event.status].map((action) => (
-                <Button
-                  key={action.to}
-                  variant={action.variant}
-                  busy={changing && statusChange.variables.status === action.to}
-                  disabled={statusChange.isPending}
-                  onClick={() =>
-                    statusChange.mutate({
-                      eventId: event.id,
-                      status: action.to,
-                    })
-                  }
-                >
-                  {action.label}
-                </Button>
-              ))}
-            {failed && (
-              <p role="alert" className={styles.error}>
-                {describeError(statusChange.error, statusMessages)}
-              </p>
-            )}
-          </li>
-        );
-      })}
-    </ul>
+    <Table
+      columns={columns}
+      data={rows}
+      rowKey="id"
+      rowClassName={(event) =>
+        statusChange.isPending &&
+        statusChange.variables.eventId === event.id &&
+        styles.changing
+      }
+      emptyMessage={
+        filtered ? "Filtreyle eşleşen etkinlik yok." : "Henüz bir etkinlik yok."
+      }
+      footer={
+        filtered
+          ? `${rows.length} / ${events.data.length} etkinlik`
+          : `${rows.length} etkinlik`
+      }
+    />
   );
 }

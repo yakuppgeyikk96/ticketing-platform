@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { cx } from "../lib/cx.ts";
 import styles from "./Badge.module.css";
 
-interface BadgeProps {
+export interface BadgeProps {
   variant?: "neutral" | "accent" | "success" | "warning" | "danger";
   // A leading dot: for statuses, where the colour carries meaning.
   dot?: boolean;

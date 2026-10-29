@@ -1,22 +1,29 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { CreateEventInput } from "@ticketing/contracts";
-import { createEvent, eventKeys } from "../../api/events.ts";
-import { Form } from "../../components/Form.tsx";
-import { Field } from "../../components/Field.tsx";
+import type { SubmitEvent } from "react";
 import {
   describeError,
   fieldErrors,
   isFormLevelError,
 } from "../../api/errors.ts";
+import { createEvent, eventKeys } from "../../api/events.ts";
 import { Button } from "../../components/Button.tsx";
-import type { SubmitEvent } from "react";
+import { Field } from "../../components/Field.tsx";
+import { Form } from "../../components/Form.tsx";
 import { textField } from "../../lib/form.ts";
+
+interface CreateEventFormProps {
+  organizationId: string;
+  onSuccess?: () => void;
+  // Given when the form sits in a dialog: shows a "Vazgeç" button.
+  onCancel?: () => void;
+}
 
 export function CreateEventForm({
   organizationId,
-}: {
-  organizationId: string;
-}) {
+  onSuccess,
+  onCancel,
+}: CreateEventFormProps) {
   const queryClient = useQueryClient();
 
   const mutation = useMutation({
@@ -37,7 +44,12 @@ export function CreateEventForm({
         title: textField(formData, "title"),
         description: textField(formData, "description") || undefined,
       },
-      { onSuccess: () => form.reset() },
+      {
+        onSuccess: () => {
+          form.reset();
+          onSuccess?.();
+        },
+      },
     );
   }
 
@@ -52,6 +64,8 @@ export function CreateEventForm({
         required
         minLength={2}
         maxLength={200}
+        autoFocus
+        hint="Slug başlıktan türetilir."
         error={errors.title}
       />
       <Field
@@ -62,11 +76,18 @@ export function CreateEventForm({
         error={errors.description}
       />
       {mutation.isError && isFormLevelError(mutation.error) && (
-        <p role="alert">{describeError(mutation.error)}</p>
+        <Form.Error>{describeError(mutation.error)}</Form.Error>
       )}
-      <Button busy={mutation.isPending}>
-        {mutation.isPending ? "Oluşturuluyor…" : "Oluştur"}
-      </Button>
+      <Form.Actions>
+        {onCancel && (
+          <Button type="button" variant="secondary" onClick={onCancel}>
+            Vazgeç
+          </Button>
+        )}
+        <Button busy={mutation.isPending}>
+          {mutation.isPending ? "Oluşturuluyor…" : "Oluştur"}
+        </Button>
+      </Form.Actions>
     </Form>
   );
 }

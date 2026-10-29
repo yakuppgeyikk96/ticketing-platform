@@ -30,6 +30,8 @@ interface TableProps<T> {
   emptyMessage?: string;
   // A line under the table: counts, pagination.
   footer?: ReactNode;
+  // Per-row class, for transient states such as "being updated".
+  rowClassName?: (row: T) => string | false | undefined;
 }
 
 export function Table<T extends Record<string, unknown>>({
@@ -38,6 +40,7 @@ export function Table<T extends Record<string, unknown>>({
   rowKey,
   emptyMessage = "Kayıt yok.",
   footer,
+  rowClassName,
 }: TableProps<T>) {
   return (
     <div className={styles.root}>
@@ -76,7 +79,7 @@ export function Table<T extends Record<string, unknown>>({
                     : String(row[rowKey] ?? rowIndex);
 
                 return (
-                  <tr key={resolvedKey}>
+                  <tr key={resolvedKey} className={cx(rowClassName?.(row))}>
                     {columns.map((column) => (
                       <td
                         key={columnId(column)}

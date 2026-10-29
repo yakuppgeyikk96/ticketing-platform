@@ -51,7 +51,8 @@
   padding-block: var(--space-2);
 }
 
-.end {
+/* Scoped under .table so it outranks the `.table td` start alignment above. */
+.table .end {
   text-align: end;
 }
 
