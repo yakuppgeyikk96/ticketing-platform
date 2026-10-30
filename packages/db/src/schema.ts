@@ -12,6 +12,7 @@ import {
   integer,
   unique,
   foreignKey,
+  jsonb,
 } from "drizzle-orm/pg-core";
 
 const timestamps = {
@@ -33,6 +34,7 @@ export const users = pgTable(
     passwordHash: text("password_hash"),
     fullName: text("full_name"),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
+    emailVerifiedAt: timestamp("email_verified_at", { withTimezone: true }),
     ...timestamps,
   },
   (t) => [uniqueIndex("users_email_lower_idx").on(sql`lower(${t.email})`)],
@@ -191,5 +193,31 @@ export const occurrences = pgTable(
       "occurrences_time_check",
       sql`${t.endsAt} is null or ${t.endsAt} > ${t.startsAt}`,
     ),
+  ],
+);
+
+export const outbox = pgTable(
+  "outbox",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`uuidv7()`),
+    type: text("type").notNull(),
+    payload: jsonb("payload").notNull(),
+    attempts: integer("attempts").notNull().default(0),
+    lastError: text("last_error"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    nextAttemptAt: timestamp("next_attempt_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    lockedAt: timestamp("locked_at", { withTimezone: true }),
+    processedAt: timestamp("processed_at", { withTimezone: true }),
+  },
+  (t) => [
+    index("outbox_unprocessed_idx")
+      .on(t.id)
+      .where(sql`${t.processedAt} IS NULL`),
   ],
 );
