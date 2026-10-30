@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { memberRoleSchema, type AddMemberInput } from "@ticketing/contracts";
-import { useId, type SubmitEvent } from "react";
+import type { SubmitEvent } from "react";
 import {
   describeError,
   fieldErrors,
@@ -8,12 +8,16 @@ import {
 } from "../../api/errors.ts";
 import { addMember, organizationKeys } from "../../api/organizations.ts";
 import { Button } from "../../components/Button.tsx";
-import { Form } from "../../components/Form.tsx";
 import { Field } from "../../components/Field.tsx";
+import { Form } from "../../components/Form.tsx";
+import { SelectField } from "../../components/SelectField.tsx";
 import { textField } from "../../lib/form.ts";
 
 interface AddMemberFormProps {
   organizationId: string;
+  onSuccess?: () => void;
+  // Given when the form sits in a dialog: shows a "Vazgeç" button.
+  onCancel?: () => void;
 }
 
 const addMemberMessages = {
@@ -21,9 +25,12 @@ const addMemberMessages = {
   "/problems/already-member": "Bu kullanıcı zaten üye",
 };
 
-export function AddMemberForm({ organizationId }: AddMemberFormProps) {
+export function AddMemberForm({
+  organizationId,
+  onSuccess,
+  onCancel,
+}: AddMemberFormProps) {
   const queryClient = useQueryClient();
-  const roleId = useId();
 
   const mutation = useMutation({
     // organizationId comes from the closure; the caller only decides who and as what.
@@ -46,7 +53,12 @@ export function AddMemberForm({ organizationId }: AddMemberFormProps) {
         // parse narrows to MemberRole and throws on anything else.
         role: memberRoleSchema.parse(textField(formData, "role")),
       },
-      { onSuccess: () => form.reset() },
+      {
+        onSuccess: () => {
+          form.reset();
+          onSuccess?.();
+        },
+      },
     );
   }
 
@@ -54,31 +66,38 @@ export function AddMemberForm({ organizationId }: AddMemberFormProps) {
 
   return (
     <Form onSubmit={handleSubmit}>
-      <h3>Üye ekle</h3>
       <Field
         label="E-posta"
         name="email"
         type="email"
         required
         maxLength={254}
+        autoFocus
+        hint="Kişinin bu e-postayla kayıtlı bir hesabı olmalı."
         error={errors.email}
       />
-      <div>
-        <label htmlFor={roleId}>Rol</label>
-        <select id={roleId} name="role" defaultValue="staff">
-          {memberRoleSchema.options.map((role) => (
-            <option key={role} value={role}>
-              {role}
-            </option>
-          ))}
-        </select>
-      </div>
+      <SelectField label="Rol" name="role" defaultValue="staff">
+        {memberRoleSchema.options.map((role) => (
+          <option key={role} value={role}>
+            {role}
+          </option>
+        ))}
+      </SelectField>
       {mutation.isError && isFormLevelError(mutation.error) && (
-        <p role="alert">{describeError(mutation.error, addMemberMessages)}</p>
+        <Form.Error>
+          {describeError(mutation.error, addMemberMessages)}
+        </Form.Error>
       )}
-      <Button busy={mutation.isPending}>
-        {mutation.isPending ? "Ekleniyor…" : "Ekle"}
-      </Button>
+      <Form.Actions>
+        {onCancel && (
+          <Button type="button" variant="secondary" onClick={onCancel}>
+            Vazgeç
+          </Button>
+        )}
+        <Button busy={mutation.isPending}>
+          {mutation.isPending ? "Ekleniyor…" : "Ekle"}
+        </Button>
+      </Form.Actions>
     </Form>
   );
 }

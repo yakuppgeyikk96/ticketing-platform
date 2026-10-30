@@ -16,11 +16,18 @@ import { textField } from "../../lib/form.ts";
 // ~600 names; computed once, not on every render.
 const timeZoneOptions = [...validTimeZones].sort();
 
+interface CreateVenueFormProps {
+  organizationId: string;
+  onSuccess?: () => void;
+  // Given when the form sits in a dialog: shows a "Vazgeç" button.
+  onCancel?: () => void;
+}
+
 export function CreateVenueForm({
   organizationId,
-}: {
-  organizationId: string;
-}) {
+  onSuccess,
+  onCancel,
+}: CreateVenueFormProps) {
   const queryClient = useQueryClient();
 
   const mutation = useMutation({
@@ -46,7 +53,12 @@ export function CreateVenueForm({
         timezone: textField(data, "timezone"),
         capacity: capacity ? Number(capacity) : undefined,
       },
-      { onSuccess: () => form.reset() },
+      {
+        onSuccess: () => {
+          form.reset();
+          onSuccess?.();
+        },
+      },
     );
   }
 
@@ -60,6 +72,7 @@ export function CreateVenueForm({
         required
         minLength={2}
         maxLength={100}
+        autoFocus
         error={errors.name}
       />
       <Field label="Şehir" name="city" maxLength={100} error={errors.city} />
@@ -87,14 +100,22 @@ export function CreateVenueForm({
         type="number"
         min={1}
         max={1_000_000}
+        hint="Boş bırakılırsa sınırsız sayılır."
         error={errors.capacity}
       />
       {mutation.isError && isFormLevelError(mutation.error) && (
-        <p role="alert">{describeError(mutation.error)}</p>
+        <Form.Error>{describeError(mutation.error)}</Form.Error>
       )}
-      <Button busy={mutation.isPending}>
-        {mutation.isPending ? "Ekleniyor…" : "Mekân ekle"}
-      </Button>
+      <Form.Actions>
+        {onCancel && (
+          <Button type="button" variant="secondary" onClick={onCancel}>
+            Vazgeç
+          </Button>
+        )}
+        <Button busy={mutation.isPending}>
+          {mutation.isPending ? "Ekleniyor…" : "Mekân ekle"}
+        </Button>
+      </Form.Actions>
     </Form>
   );
 }
