@@ -1,15 +1,30 @@
 /* The login page renders outside the app shell, so it owns the whole viewport:
-   a grid that centres one card both ways, with a gutter so the card never
+   a grid that centres one column both ways, with a gutter so the card never
    touches the edges on small screens. */
 .page {
   min-height: 100dvh;
   display: grid;
   place-items: center;
   padding: var(--space-6);
+  background: var(--color-bg);
+}
+
+/* Wordmark, card and help line stack and centre on the same axis. */
+.column {
+  width: min(100%, 26rem);
+  display: grid;
+  gap: var(--space-6);
+  justify-items: center;
+}
+
+.brand {
+  font-size: var(--text-xl);
+  font-weight: var(--weight-semibold);
+  letter-spacing: -0.01em;
 }
 
 .card {
-  width: min(100%, 26rem);
+  width: 100%;
   display: grid;
   gap: var(--space-6);
   padding: var(--space-8);
@@ -31,4 +46,10 @@
 .subtitle {
   font-size: var(--text-sm);
   color: var(--color-text-muted);
+}
+
+.help {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  text-align: center;
 }

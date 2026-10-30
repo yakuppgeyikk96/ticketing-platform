@@ -17,17 +17,23 @@ export function LoginPage() {
 
   return (
     <main className={styles.page}>
-      <section className={styles.card} aria-labelledby="login-title">
-        <header className={styles.header}>
-          <h1 id="login-title" className={styles.title}>
-            Giriş yap
-          </h1>
-          <p className={styles.subtitle}>
-            Devam etmek için hesabınızla giriş yapın.
-          </p>
-        </header>
-        <LoginForm />
-      </section>
+      <div className={styles.column}>
+        <p className={styles.brand}>Ticketing</p>
+        <section className={styles.card} aria-labelledby="login-title">
+          <header className={styles.header}>
+            <h1 id="login-title" className={styles.title}>
+              Giriş yap
+            </h1>
+            <p className={styles.subtitle}>
+              Devam etmek için hesabınızla giriş yapın.
+            </p>
+          </header>
+          <LoginForm />
+        </section>
+        <p className={styles.help}>
+          Hesabınız yoksa organizasyon sahibinizden davet isteyin.
+        </p>
+      </div>
     </main>
   );
 }
