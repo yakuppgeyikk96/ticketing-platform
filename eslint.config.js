@@ -7,7 +7,9 @@ import globals from "globals";
 import tseslint from "typescript-eslint";
 
 export default defineConfig(
-  { ignores: ["**/node_modules/", "**/dist/"] },
+  {
+    ignores: ["**/node_modules/", "**/dist/", "**/.next/", "**/next-env.d.ts"],
+  },
   {
     files: ["**/*.{ts,tsx}"],
     extends: [js.configs.recommended, tseslint.configs.recommendedTypeChecked],
@@ -37,6 +39,12 @@ export default defineConfig(
     files: ["apps/dashboard/src/**/*.{ts,tsx}"],
     extends: [reactHooks.configs.flat.recommended, reactRefresh.configs.vite],
     languageOptions: { globals: globals.browser },
+  },
+  {
+    // Next.js app: hooks rules apply, react-refresh does not (Vite-only).
+    files: ["apps/public/src/**/*.{ts,tsx}"],
+    extends: [reactHooks.configs.flat.recommended],
+    languageOptions: { globals: { ...globals.browser, ...globals.node } },
   },
   prettier,
 );
