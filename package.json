@@ -9,6 +9,8 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
+    "dev": "docker compose --profile apps up",
+    "dev:down": "docker compose --profile apps down",
     "db:up": "docker compose up -d --wait",
     "db:down": "docker compose down"
   },

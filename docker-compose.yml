@@ -1,3 +1,32 @@
+# Infra (postgres, redis) always starts. The apps sit behind the `apps`
+# profile so `pnpm db:up` keeps starting infra only and `pnpm dev` starts all.
+#
+# Each app container bind mounts the repo and shadows every node_modules with
+# a named volume: the host's macOS node_modules must never reach a Linux
+# container. `deps` installs into those volumes once, the apps wait for it.
+
+x-app: &app
+  build:
+    context: docker
+    dockerfile: dev.Dockerfile
+  image: ticketing-dev
+  # Never look for this image in a registry; it only exists from the build above.
+  pull_policy: build
+  profiles: [apps]
+  environment:
+    # pnpm reads npm_config_* from the environment; keep the store in a volume
+    # so a fresh `deps` run is a link, not a download.
+    npm_config_store_dir: /pnpm/store
+  volumes:
+    - .:/workspace
+    - pnpm-store:/pnpm/store
+    - root-modules:/workspace/node_modules
+    - api-modules:/workspace/apps/api/node_modules
+    - dashboard-modules:/workspace/apps/dashboard/node_modules
+    - public-modules:/workspace/apps/public/node_modules
+    - contracts-modules:/workspace/packages/contracts/node_modules
+    - db-modules:/workspace/packages/db/node_modules
+
 services:
   postgres:
     image: postgres:18
@@ -25,5 +54,59 @@ services:
       timeout: 3s
       retries: 10
 
+  deps:
+    <<: *app
+    command: pnpm install --frozen-lockfile
+
+  api:
+    <<: *app
+    working_dir: /workspace/apps/api
+    command: pnpm dev
+    environment:
+      npm_config_store_dir: /pnpm/store
+      # Overrides the loopback URL in .env (the environment wins over --env-file).
+      DATABASE_URL: postgres://ticketing:${POSTGRES_PASSWORD}@postgres:5432/ticketing
+      HOST: 0.0.0.0
+    ports:
+      - "127.0.0.1:3000:3000"
+    depends_on:
+      deps:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+
+  dashboard:
+    <<: *app
+    working_dir: /workspace/apps/dashboard
+    command: pnpm dev --host 0.0.0.0
+    environment:
+      npm_config_store_dir: /pnpm/store
+      API_URL: http://api:3000
+    ports:
+      - "127.0.0.1:5173:5173"
+    depends_on:
+      deps:
+        condition: service_completed_successfully
+
+  public:
+    <<: *app
+    working_dir: /workspace/apps/public
+    command: pnpm dev
+    environment:
+      npm_config_store_dir: /pnpm/store
+      API_URL: http://api:3000
+    ports:
+      - "127.0.0.1:3001:3001"
+    depends_on:
+      deps:
+        condition: service_completed_successfully
+
 volumes:
   postgres-data:
+  pnpm-store:
+  root-modules:
+  api-modules:
+  dashboard-modules:
+  public-modules:
+  contracts-modules:
+  db-modules:

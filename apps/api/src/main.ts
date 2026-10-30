@@ -58,4 +58,5 @@ for (const signal of ["SIGTERM", "SIGINT"] as const) {
   });
 }
 
-await app.listen({ port: 3000, host: "127.0.0.1" });
+// Loopback by default; docker compose sets HOST=0.0.0.0 so the port mapping reaches us.
+await app.listen({ port: 3000, host: process.env.HOST ?? "127.0.0.1" });

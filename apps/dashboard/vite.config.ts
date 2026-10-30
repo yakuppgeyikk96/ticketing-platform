@@ -7,7 +7,8 @@ export default defineConfig({
   server: {
     proxy: {
       "/api": {
-        target: "http://127.0.0.1:3000",
+        // Host dev: loopback. Docker compose: the api service by name.
+        target: process.env.API_URL ?? "http://127.0.0.1:3000",
         rewrite: (path) => path.replace(/^\/api/, ""),
       },
     },
