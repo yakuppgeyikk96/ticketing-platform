@@ -2,10 +2,15 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Event, EventStatus, MemberRole } from "@ticketing/contracts";
 import { Link } from "react-router";
 import styles from "./EventList.module.css";
+import {
+  eventStatusLabels,
+  eventStatusMessages,
+  eventTransitions,
+} from "./eventStatus.ts";
 import { eventKeys, eventsQuery, updateEventStatus } from "../../api/events.ts";
 import { describeError } from "../../api/errors.ts";
 import { ActionMenu } from "../../components/ActionMenu.tsx";
-import { Badge, type BadgeProps } from "../../components/Badge.tsx";
+import { Badge } from "../../components/Badge.tsx";
 import { Dropdown } from "../../components/Dropdown.tsx";
 import { Table, type TableColumn } from "../../components/Table.tsx";
 import { matchesQuery } from "../../lib/search.ts";
@@ -19,33 +24,6 @@ interface EventListProps {
   query?: string;
   status?: EventStatusFilter;
 }
-
-const statusLabels: Record<
-  EventStatus,
-  { label: string; variant: NonNullable<BadgeProps["variant"]> }
-> = {
-  draft: { label: "Taslak", variant: "warning" },
-  published: { label: "Yayında", variant: "success" },
-  archived: { label: "Arşiv", variant: "neutral" },
-};
-
-// UI copy of the service's transition table: which actions each status offers.
-const actions: Record<
-  EventStatus,
-  readonly { to: EventStatus; label: string; danger?: boolean }[]
-> = {
-  draft: [{ to: "published", label: "Yayınla" }],
-  published: [
-    { to: "draft", label: "Taslağa çek" },
-    { to: "archived", label: "Arşivle", danger: true },
-  ],
-  archived: [],
-};
-
-const statusMessages = {
-  "/problems/invalid-transition":
-    "Etkinlik bu arada değişmiş; liste yenilendi, tekrar dene",
-};
 
 export function EventList({
   organizationId,
@@ -92,7 +70,7 @@ export function EventList({
             <code className={styles.slug}>{event.slug}</code>
             {failed && (
               <p role="alert" className={styles.error}>
-                {describeError(statusChange.error, statusMessages)}
+                {describeError(statusChange.error, eventStatusMessages)}
               </p>
             )}
           </div>
@@ -103,8 +81,8 @@ export function EventList({
       key: "status",
       title: "Durum",
       render: (status: EventStatus) => (
-        <Badge variant={statusLabels[status].variant} dot>
-          {statusLabels[status].label}
+        <Badge variant={eventStatusLabels[status].variant} dot>
+          {eventStatusLabels[status].label}
         </Badge>
       ),
     },
@@ -117,14 +95,14 @@ export function EventList({
       hideTitle: true,
       align: "end",
       render: (event: Event) => {
-        const available = actions[event.status];
+        const available = eventTransitions[event.status];
         if (available.length === 0) return null;
         return (
           <ActionMenu label={`${event.title} işlemleri`}>
             {available.map((action) => (
               <Dropdown.Item
                 key={action.to}
-                danger={action.danger ?? false}
+                danger={action.variant === "danger"}
                 disabled={statusChange.isPending}
                 onClick={() =>
                   statusChange.mutate({ eventId: event.id, status: action.to })

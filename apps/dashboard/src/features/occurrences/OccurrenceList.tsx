@@ -1,5 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { MemberRole, OccurrenceStatus, Venue } from "@ticketing/contracts";
+import type {
+  MemberRole,
+  Occurrence,
+  OccurrenceStatus,
+  Venue,
+} from "@ticketing/contracts";
 import { describeError } from "../../api/errors.ts";
 import {
   occurrenceKeys,
@@ -7,7 +12,10 @@ import {
   updateOccurrenceStatus,
 } from "../../api/occurrences.ts";
 import { venuesQuery } from "../../api/venues.ts";
-import { Button } from "../../components/Button.tsx";
+import { ActionMenu } from "../../components/ActionMenu.tsx";
+import { Badge, type BadgeProps } from "../../components/Badge.tsx";
+import { Dropdown } from "../../components/Dropdown.tsx";
+import { Table, type TableColumn } from "../../components/Table.tsx";
 import styles from "./OccurrenceList.module.css";
 
 interface OccurrenceListProps {
@@ -16,30 +24,29 @@ interface OccurrenceListProps {
   role: MemberRole;
 }
 
-const statusLabels: Record<OccurrenceStatus, string> = {
-  draft: "Taslak",
-  on_sale: "Satışta",
-  sold_out: "Tükendi",
-  cancelled: "İptal",
-  ended: "Bitti",
+const statusLabels: Record<
+  OccurrenceStatus,
+  { label: string; variant: NonNullable<BadgeProps["variant"]> }
+> = {
+  draft: { label: "Taslak", variant: "warning" },
+  on_sale: { label: "Satışta", variant: "success" },
+  sold_out: { label: "Tükendi", variant: "accent" },
+  cancelled: { label: "İptal", variant: "danger" },
+  ended: { label: "Bitti", variant: "neutral" },
 };
 
-// UI copy of the service's manual transitions; system-owned statuses show nothing.
+// UI copy of the service's manual transitions; system-owned statuses offer nothing.
 const actions: Record<
   OccurrenceStatus,
-  readonly {
-    to: OccurrenceStatus;
-    label: string;
-    variant: "primary" | "secondary" | "danger";
-  }[]
+  readonly { to: OccurrenceStatus; label: string; danger?: boolean }[]
 > = {
   draft: [
-    { to: "on_sale", label: "Satışa aç", variant: "primary" },
-    { to: "cancelled", label: "İptal et", variant: "danger" },
+    { to: "on_sale", label: "Satışa aç" },
+    { to: "cancelled", label: "İptal et", danger: true },
   ],
   on_sale: [
-    { to: "draft", label: "Taslağa çek", variant: "secondary" },
-    { to: "cancelled", label: "İptal et", variant: "danger" },
+    { to: "draft", label: "Taslağa çek" },
+    { to: "cancelled", label: "İptal et", danger: true },
   ],
   sold_out: [],
   cancelled: [],
@@ -86,33 +93,22 @@ export function OccurrenceList({
       }),
   });
 
-  if (occurrences.isPending) return <p>Yükleniyor…</p>;
-  if (occurrences.isError) {
-    return <p role="alert">{describeError(occurrences.error)}</p>;
-  }
-  if (occurrences.data.length === 0) return <p>Henüz gösterim yok.</p>;
-
   const canEdit = role === "owner" || role === "admin";
   const venueById = new Map(venues.data?.map((v) => [v.id, v]));
 
-  return (
-    <ul role="list">
-      {occurrences.data.map((occurrence) => {
+  const columns: TableColumn<Occurrence>[] = [
+    {
+      key: "startsAt",
+      title: "Tarih",
+      render: (startsAt: string, occurrence) => {
         const venue = venueById.get(occurrence.venueId);
-        const inFlight = statusChange.variables?.occurrenceId === occurrence.id;
-        const changing = statusChange.isPending && inFlight;
-        const failed = statusChange.isError && inFlight;
+        const failed =
+          statusChange.isError &&
+          statusChange.variables.occurrenceId === occurrence.id;
         return (
-          <li
-            key={occurrence.id}
-            className={[styles.row, changing && styles.changing]
-              .filter(Boolean)
-              .join(" ")}
-          >
-            <div className={styles.when}>
-              <time dateTime={occurrence.startsAt}>
-                {formatInVenue(occurrence.startsAt, venue)}
-              </time>
+          <div className={styles.cell}>
+            <span className={styles.when}>
+              <time dateTime={startsAt}>{formatInVenue(startsAt, venue)}</time>
               {occurrence.endsAt && (
                 <span className={styles.until}>
                   {" → "}
@@ -121,41 +117,91 @@ export function OccurrenceList({
                   </time>
                 </span>
               )}
-            </div>
-            <span className={styles.venue}>
-              {venue?.name ?? "…"}
-              {venue && <small> {venue.timezone}</small>}
             </span>
-            <span
-              className={[styles.status, styles[occurrence.status]].join(" ")}
-            >
-              {statusLabels[occurrence.status]}
-            </span>
-            {canEdit &&
-              actions[occurrence.status].map((action) => (
-                <Button
-                  key={action.to}
-                  variant={action.variant}
-                  busy={changing && statusChange.variables.status === action.to}
-                  disabled={statusChange.isPending}
-                  onClick={() =>
-                    statusChange.mutate({
-                      occurrenceId: occurrence.id,
-                      status: action.to,
-                    })
-                  }
-                >
-                  {action.label}
-                </Button>
-              ))}
+            {venue && <span className={styles.sub}>{venue.timezone}</span>}
             {failed && (
               <p role="alert" className={styles.error}>
                 {describeError(statusChange.error, statusMessages)}
               </p>
             )}
-          </li>
+          </div>
         );
-      })}
-    </ul>
+      },
+    },
+    {
+      key: "venueId",
+      title: "Mekân",
+      render: (venueId: string) => {
+        const venue = venueById.get(venueId);
+        if (!venue) return "…";
+        return (
+          <div className={styles.cell}>
+            <span>{venue.name}</span>
+            {venue.city && <span className={styles.sub}>{venue.city}</span>}
+          </div>
+        );
+      },
+    },
+    {
+      key: "status",
+      title: "Durum",
+      render: (status: OccurrenceStatus) => (
+        <Badge variant={statusLabels[status].variant} dot>
+          {statusLabels[status].label}
+        </Badge>
+      ),
+    },
+  ];
+
+  if (canEdit) {
+    columns.push({
+      id: "actions",
+      title: "İşlemler",
+      hideTitle: true,
+      align: "end",
+      render: (occurrence: Occurrence) => {
+        const available = actions[occurrence.status];
+        if (available.length === 0) return null;
+        return (
+          <ActionMenu label="Gösterim işlemleri">
+            {available.map((action) => (
+              <Dropdown.Item
+                key={action.to}
+                danger={action.danger ?? false}
+                disabled={statusChange.isPending}
+                onClick={() =>
+                  statusChange.mutate({
+                    occurrenceId: occurrence.id,
+                    status: action.to,
+                  })
+                }
+              >
+                {action.label}
+              </Dropdown.Item>
+            ))}
+          </ActionMenu>
+        );
+      },
+    });
+  }
+
+  if (occurrences.isPending) return <p>Yükleniyor…</p>;
+  if (occurrences.isError) {
+    return <p role="alert">{describeError(occurrences.error)}</p>;
+  }
+
+  return (
+    <Table
+      columns={columns}
+      data={occurrences.data}
+      rowKey="id"
+      rowClassName={(occurrence) =>
+        statusChange.isPending &&
+        statusChange.variables.occurrenceId === occurrence.id &&
+        styles.changing
+      }
+      emptyMessage="Henüz gösterim yok."
+      footer={`${occurrences.data.length} gösterim`}
+    />
   );
 }

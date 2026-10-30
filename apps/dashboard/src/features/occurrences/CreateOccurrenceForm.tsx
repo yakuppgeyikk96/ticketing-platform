@@ -18,6 +18,9 @@ import { toInstant } from "../../lib/time.ts";
 interface CreateOccurrenceFormProps {
   organizationId: string;
   eventId: string;
+  onSuccess?: () => void;
+  // Given when the form sits in a dialog: shows a "Vazgeç" button.
+  onCancel?: () => void;
 }
 
 const createMessages = {
@@ -28,6 +31,8 @@ const createMessages = {
 export function CreateOccurrenceForm({
   organizationId,
   eventId,
+  onSuccess,
+  onCancel,
 }: CreateOccurrenceFormProps) {
   const queryClient = useQueryClient();
   const venues = useQuery(venuesQuery(organizationId));
@@ -59,7 +64,12 @@ export function CreateOccurrenceForm({
         startsAt: toInstant(textField(data, "startsAt"), venue.timezone),
         endsAt: endsAt ? toInstant(endsAt, venue.timezone) : undefined,
       },
-      { onSuccess: () => form.reset() },
+      {
+        onSuccess: () => {
+          form.reset();
+          onSuccess?.();
+        },
+      },
     );
   }
 
@@ -75,7 +85,13 @@ export function CreateOccurrenceForm({
 
   return (
     <Form onSubmit={handleSubmit}>
-      <SelectField label="Mekân" name="venueId" required error={errors.venueId}>
+      <SelectField
+        label="Mekân"
+        name="venueId"
+        required
+        autoFocus
+        error={errors.venueId}
+      >
         {venues.data.map((venue) => (
           <option key={venue.id} value={venue.id}>
             {venue.name} ({venue.timezone})
@@ -87,6 +103,7 @@ export function CreateOccurrenceForm({
         name="startsAt"
         type="datetime-local"
         required
+        hint="Mekânın saat dilimine göre."
         error={errors.startsAt}
       />
       <Field
@@ -96,11 +113,18 @@ export function CreateOccurrenceForm({
         error={errors.endsAt}
       />
       {mutation.isError && isFormLevelError(mutation.error) && (
-        <p role="alert">{describeError(mutation.error, createMessages)}</p>
+        <Form.Error>{describeError(mutation.error, createMessages)}</Form.Error>
       )}
-      <Button busy={mutation.isPending}>
-        {mutation.isPending ? "Ekleniyor…" : "Gösterim ekle"}
-      </Button>
+      <Form.Actions>
+        {onCancel && (
+          <Button type="button" variant="secondary" onClick={onCancel}>
+            Vazgeç
+          </Button>
+        )}
+        <Button busy={mutation.isPending}>
+          {mutation.isPending ? "Ekleniyor…" : "Gösterim ekle"}
+        </Button>
+      </Form.Actions>
     </Form>
   );
 }
