@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { after, before, test } from "node:test";
 import { problemSchema, type ProblemBody } from "@ticketing/contracts";
+import { outbox } from "@ticketing/db";
+import { and, eq, sql } from "drizzle-orm";
 import { createApp } from "../app.ts";
 
 const connectionString = process.env.DATABASE_URL;
@@ -46,6 +48,61 @@ test("POST /auth/register creates a user and normalizes the email", async () => 
   assert.ok("email" in body);
   assert.equal(body.email, email.toLowerCase());
   assert.ok(!("passwordHash" in body));
+});
+
+// Outbox rows written for one user; the worker reads these later.
+function outboxRowsFor(userId: string) {
+  return app.db
+    .select({ type: outbox.type, payload: outbox.payload })
+    .from(outbox)
+    .where(
+      and(
+        eq(outbox.type, "user.registered"),
+        eq(sql`${outbox.payload}->>'userId'`, userId),
+      ),
+    );
+}
+
+test("POST /auth/register writes a user.registered outbox row in the same transaction", async () => {
+  const email = uniqueEmail();
+
+  const res = await app.inject({
+    method: "POST",
+    url: "/auth/register",
+    payload: { email, password: "correct horse battery" },
+  });
+  assert.equal(res.statusCode, 201);
+  const { id } = res.json<{ id: string }>();
+
+  const rows = await outboxRowsFor(id);
+  assert.equal(rows.length, 1);
+  assert.deepEqual(rows[0]?.payload, {
+    userId: id,
+    email: email.toLowerCase(),
+  });
+});
+
+test("POST /auth/register 409 leaves no outbox row behind", async () => {
+  const email = uniqueEmail();
+
+  const first = await app.inject({
+    method: "POST",
+    url: "/auth/register",
+    payload: { email, password: "correct horse battery" },
+  });
+  assert.equal(first.statusCode, 201);
+  const { id } = first.json<{ id: string }>();
+
+  const second = await app.inject({
+    method: "POST",
+    url: "/auth/register",
+    payload: { email, password: "correct horse battery" },
+  });
+  assert.equal(second.statusCode, 409);
+
+  // The unique violation rolled the whole transaction back: still only the first row.
+  const rows = await outboxRowsFor(id);
+  assert.equal(rows.length, 1);
 });
 
 test("POST /auth/register returns 409 if the two identical email is sent", async () => {

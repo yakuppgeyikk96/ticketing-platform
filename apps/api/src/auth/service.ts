@@ -1,4 +1,4 @@
-import { isUniqueViolation, users, type Db } from "@ticketing/db";
+import { isUniqueViolation, outbox, users, type Db } from "@ticketing/db";
 import { ConflictError, UnauthorizedError } from "../errors.ts";
 import type { SessionUser } from "./sessions.ts";
 import { hashPassword, verifyPassword } from "./passwords.ts";
@@ -17,27 +17,34 @@ export async function registerUser(
   try {
     const passwordHash = await hashPassword(input.password);
 
-    const [user] = await db
-      .insert(users)
-      .values({
-        email: input.email,
-        passwordHash,
-      })
-      .returning({
-        id: users.id,
-        email: users.email,
-        createdAt: users.createdAt,
+    return await db.transaction(async (tx) => {
+      const [user] = await tx
+        .insert(users)
+        .values({
+          email: input.email,
+          passwordHash,
+        })
+        .returning({
+          id: users.id,
+          email: users.email,
+          createdAt: users.createdAt,
+        });
+
+      if (!user) {
+        throw new Error("insert return no row");
+      }
+
+      await tx.insert(outbox).values({
+        type: "user.registered",
+        payload: { userId: user.id, email: user.email },
       });
 
-    if (!user) {
-      throw new Error("insert return no row");
-    }
-
-    return {
-      id: user.id,
-      email: user.email,
-      createdAt: user.createdAt,
-    };
+      return {
+        id: user.id,
+        email: user.email,
+        createdAt: user.createdAt,
+      };
+    });
   } catch (err) {
     if (isUniqueViolation(err, "users_email_lower_idx")) {
       throw new ConflictError(
