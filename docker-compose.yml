@@ -24,6 +24,7 @@ x-app: &app
     - api-modules:/workspace/apps/api/node_modules
     - dashboard-modules:/workspace/apps/dashboard/node_modules
     - public-modules:/workspace/apps/public/node_modules
+    - worker-modules:/workspace/apps/worker/node_modules
     - contracts-modules:/workspace/packages/contracts/node_modules
     - db-modules:/workspace/packages/db/node_modules
 
@@ -75,6 +76,19 @@ services:
       postgres:
         condition: service_healthy
 
+  worker:
+    <<: *app
+    working_dir: /workspace/apps/worker
+    command: pnpm dev
+    environment:
+      npm_config_store_dir: /pnpm/store
+      DATABASE_URL: postgres://ticketing:${POSTGRES_PASSWORD}@postgres:5432/ticketing
+    depends_on:
+      deps:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+
   dashboard:
     <<: *app
     working_dir: /workspace/apps/dashboard
@@ -108,5 +122,6 @@ volumes:
   api-modules:
   dashboard-modules:
   public-modules:
+  worker-modules:
   contracts-modules:
   db-modules:

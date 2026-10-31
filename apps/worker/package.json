@@ -1,0 +1,20 @@
+{
+  "name": "@ticketing/worker",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "node --env-file=../../.env --watch src/main.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "node --env-file=../../.env --test"
+  },
+  "dependencies": {
+    "@ticketing/db": "workspace:*",
+    "drizzle-orm": "catalog:"
+  },
+  "devDependencies": {
+    "@ticketing/tsconfig": "workspace:*",
+    "@types/node": "catalog:",
+    "typescript": "catalog:"
+  }
+}
