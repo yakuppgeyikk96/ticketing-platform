@@ -26,7 +26,7 @@ async function run(): Promise<void> {
     if (!handler) throw new Error(`no handler for outbox type ${row.type}`);
 
     try {
-      await handler(row.payload);
+      await handler(row.payload, row.id);
       await markProcessed(db, row.id);
     } catch (err) {
       await markFailed(db, row.id, err);

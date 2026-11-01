@@ -23,6 +23,7 @@ export async function registerUser(
         .values({
           email: input.email,
           passwordHash,
+          emailVerifiedAt: new Date(),
         })
         .returning({
           id: users.id,
