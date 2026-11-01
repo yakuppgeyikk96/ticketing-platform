@@ -2,9 +2,11 @@ import { createBrowserRouter, Navigate } from "react-router";
 import { LoginPage } from "./pages/LoginPage.tsx";
 import { RequireSession } from "./layout/RequireSession.tsx";
 import { AppLayout } from "./layout/AppLayout.tsx";
+import { RegisterPage } from "./pages/RegisterPage.tsx";
 
 export const router = createBrowserRouter([
   { path: "/login", Component: LoginPage },
+  { path: "/register", Component: RegisterPage },
   {
     // No path: a layout route. Everything below needs a session.
     Component: RequireSession,

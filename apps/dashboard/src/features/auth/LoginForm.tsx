@@ -7,7 +7,7 @@ import { sessionKey } from "../../features/auth/useSession.ts";
 import { Field } from "../../components/Field.tsx";
 import { Button } from "../../components/Button.tsx";
 import { Form } from "../../components/Form.tsx";
-import styles from "./LoginForm.module.css";
+import styles from "./AuthForm.module.css";
 
 export function LoginForm() {
   const queryClient = useQueryClient();

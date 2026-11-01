@@ -53,3 +53,11 @@
   color: var(--color-text-muted);
   text-align: center;
 }
+
+.notice {
+  padding: var(--space-3);
+  font-size: var(--text-sm);
+  color: var(--color-success);
+  background: var(--color-success-subtle);
+  border-radius: var(--radius-md);
+}

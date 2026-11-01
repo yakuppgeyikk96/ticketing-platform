@@ -1,7 +1,16 @@
-import { Navigate, useLocation } from "react-router";
+import { Link, Navigate, useLocation } from "react-router";
 import { useSession } from "../features/auth/useSession.ts";
 import { LoginForm } from "../features/auth/LoginForm.tsx";
-import styles from "./LoginPage.module.css";
+import styles from "./AuthPage.module.css";
+
+function wasRegistered(state: unknown): boolean {
+  return (
+    !!state &&
+    typeof state === "object" &&
+    "registered" in state &&
+    state.registered === true
+  );
+}
 
 export function LoginPage() {
   const session = useSession();
@@ -28,10 +37,16 @@ export function LoginPage() {
               Devam etmek için hesabınızla giriş yapın.
             </p>
           </header>
+          {wasRegistered(location.state) && (
+            <p role="status" className={styles.notice}>
+              Hesabınız oluşturuldu, şimdi giriş yapın.
+            </p>
+          )}
+
           <LoginForm />
         </section>
         <p className={styles.help}>
-          Hesabınız yoksa organizasyon sahibinizden davet isteyin.
+          Hesabınız yok mu? <Link to="/register">Kayıt olun</Link>
         </p>
       </div>
     </main>

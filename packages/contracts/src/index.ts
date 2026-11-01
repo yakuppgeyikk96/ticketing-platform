@@ -29,6 +29,8 @@ export const registerBodySchema = z.object({
 
 export type RegisterBody = z.infer<typeof registerBodySchema>;
 
+export type RegisterInput = z.input<typeof registerBodySchema>;
+
 export const registerResponseSchema = z.object({
   id: z.uuid(),
   email: z.email(),
