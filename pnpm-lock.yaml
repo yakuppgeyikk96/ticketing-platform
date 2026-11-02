@@ -361,6 +361,9 @@ importers:
 
   apps/worker:
     dependencies:
+      '@ticketing/contracts':
+        specifier: workspace:*
+        version: link:../../packages/contracts
       '@ticketing/db':
         specifier: workspace:*
         version: link:../../packages/db

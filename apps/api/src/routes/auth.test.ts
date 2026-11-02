@@ -79,7 +79,29 @@ test("POST /auth/register writes a user.registered outbox row in the same transa
   assert.deepEqual(rows[0]?.payload, {
     userId: id,
     email: email.toLowerCase(),
+    locale: "tr",
   });
+});
+
+test("POST /auth/register takes the locale from the body, else from Accept-Language", async () => {
+  const fromBody = await app.inject({
+    method: "POST",
+    url: "/auth/register",
+    payload: { email: uniqueEmail(), password: "correct horse battery", locale: "en" },
+  });
+  assert.equal(fromBody.statusCode, 201);
+  const bodyRows = await outboxRowsFor(fromBody.json<{ id: string }>().id);
+  assert.equal((bodyRows[0]?.payload as { locale: string }).locale, "en");
+
+  const fromHeader = await app.inject({
+    method: "POST",
+    url: "/auth/register",
+    headers: { "accept-language": "en-US,en;q=0.9,tr;q=0.8" },
+    payload: { email: uniqueEmail(), password: "correct horse battery" },
+  });
+  assert.equal(fromHeader.statusCode, 201);
+  const headerRows = await outboxRowsFor(fromHeader.json<{ id: string }>().id);
+  assert.equal((headerRows[0]?.payload as { locale: string }).locale, "en");
 });
 
 test("POST /auth/register 409 leaves no outbox row behind", async () => {

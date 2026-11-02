@@ -9,6 +9,7 @@
     "test": "node --env-file=../../.env --test"
   },
   "dependencies": {
+    "@ticketing/contracts": "workspace:*",
     "@ticketing/db": "workspace:*",
     "drizzle-orm": "catalog:",
     "resend": "catalog:",

@@ -35,9 +35,13 @@ export const users = pgTable(
     fullName: text("full_name"),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
     emailVerifiedAt: timestamp("email_verified_at", { withTimezone: true }),
+    locale: text("locale", { enum: ["tr", "en"] }).notNull().default("tr"),
     ...timestamps,
   },
-  (t) => [uniqueIndex("users_email_lower_idx").on(sql`lower(${t.email})`)],
+  (t) => [
+    uniqueIndex("users_email_lower_idx").on(sql`lower(${t.email})`),
+    check("users_locale_check", sql`${t.locale} in ('tr', 'en')`),
+  ],
 );
 
 export const organizations = pgTable("organizations", {

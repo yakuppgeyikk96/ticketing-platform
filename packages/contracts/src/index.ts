@@ -2,6 +2,9 @@ import { z } from "zod";
 
 export const API_VERSION = "0.0.1";
 
+export const localeSchema = z.enum(["tr", "en"]);
+export type Locale = z.output<typeof localeSchema>;
+
 export const healthResponseSchema = z.object({
   status: z.literal("ok"),
   version: z.string(),
@@ -25,6 +28,7 @@ export const registerBodySchema = z.object({
     .min(8)
     .max(128)
     .meta({ example: "correct horse battery" }),
+  locale: localeSchema.optional(),
 });
 
 export type RegisterBody = z.infer<typeof registerBodySchema>;
@@ -63,9 +67,16 @@ export const currentUserSchema = z.object({
   id: z.uuid(),
   email: z.email(),
   fullName: z.string().nullable(),
+  locale: localeSchema,
 });
 
 export type CurrentUser = z.output<typeof currentUserSchema>;
+
+export const updateMeBodySchema = z.object({
+  locale: localeSchema,
+});
+
+export type UpdateMeInput = z.input<typeof updateMeBodySchema>;
 
 export const createOrganizationBodySchema = z.object({
   name: z.string().trim().min(2).max(100).meta({
@@ -127,8 +138,10 @@ export const createVenueBodySchema = z.object({
   name: z.string().trim().min(2).max(100),
   address: z.string().trim().max(300).optional(),
   city: z.string().trim().max(100).optional(),
+  // Custom messages are codes, not sentences: the API turns them into the
+  // request's language (see apps/api/src/plugins/errors.ts).
   timezone: z.string().refine((tz) => validTimeZones.has(tz), {
-    message: "Unknown IANA time zone",
+    message: "invalid-timezone",
   }),
   capacity: z.int().positive().max(1_000_000).optional(),
 });
@@ -218,7 +231,7 @@ export const createOccurrenceBodySchema = z
       ctx.addIssue({
         code: "custom",
         path: ["endsAt"],
-        message: "endsAt must be after startsAt",
+        message: "ends-before-starts",
       });
     }
   });
@@ -260,6 +273,7 @@ z.globalRegistry.add(registerResponseSchema, { id: "RegisterResponse" });
 z.globalRegistry.add(healthResponseSchema, { id: "HealthResponse" });
 z.globalRegistry.add(loginBodySchema, { id: "LoginBody" });
 z.globalRegistry.add(currentUserSchema, { id: "CurrentUser" });
+z.globalRegistry.add(updateMeBodySchema, { id: "UpdateMeBody" });
 z.globalRegistry.add(createOrganizationBodySchema, {
   id: "CreateOrganizationBody",
 });

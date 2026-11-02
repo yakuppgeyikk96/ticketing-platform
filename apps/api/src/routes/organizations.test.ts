@@ -170,6 +170,26 @@ test("POST /organizations rejects a too-short name with a validation problem", a
   assert.ok(body.errors?.some((e) => e.field === "name"));
 });
 
+test("validation messages follow Accept-Language; Turkish is the default", async () => {
+  const cookie = await loginCookie();
+  const post = (acceptLanguage?: string) =>
+    app.inject({
+      method: "POST",
+      url: "/organizations",
+      headers: {
+        cookie,
+        ...(acceptLanguage && { "accept-language": acceptLanguage }),
+      },
+      payload: { name: " A " },
+    });
+  const nameMessage = (body: unknown) =>
+    problem(body).errors?.find((e) => e.field === "name")?.message ?? "";
+
+  assert.match(nameMessage((await post()).json()), /^Çok küçük/);
+  assert.match(nameMessage((await post("tr-TR,tr")).json()), /^Çok küçük/);
+  assert.match(nameMessage((await post("en-US,en")).json()), /^Too small/);
+});
+
 test("POST /organizations rejects a name that leaves no slug characters", async () => {
   const cookie = await loginCookie();
 

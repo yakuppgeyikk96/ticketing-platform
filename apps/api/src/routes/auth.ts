@@ -5,6 +5,7 @@ import {
   problemSchema,
   registerBodySchema,
   registerResponseSchema,
+  updateMeBodySchema,
 } from "@ticketing/contracts";
 import type { FastifyPluginCallbackZod } from "fastify-type-provider-zod";
 import {
@@ -15,7 +16,8 @@ import {
 } from "../auth/sessions.ts";
 import { SESSION_COOKIE } from "../plugins/session.ts";
 import { requireAuth } from "../auth/require-auth.ts";
-import { authenticate, registerUser } from "../auth/service.ts";
+import { authenticate, registerUser, updateLocale } from "../auth/service.ts";
+import { pickLocale } from "../lib/locale.ts";
 
 const authRoutes: FastifyPluginCallbackZod<{ secureCookies: boolean }> = (
   fastify,
@@ -33,11 +35,12 @@ const authRoutes: FastifyPluginCallbackZod<{ secureCookies: boolean }> = (
       },
     },
     async (request, reply) => {
-      const { email, password } = request.body;
+      const { email, password, locale } = request.body;
 
       const user = await registerUser(fastify.db, {
         email,
         password,
+        locale: locale ?? pickLocale(request.headers["accept-language"]),
       });
 
       return await reply.code(201).send({
@@ -78,6 +81,7 @@ const authRoutes: FastifyPluginCallbackZod<{ secureCookies: boolean }> = (
         id: user.id,
         email: user.email,
         fullName: user.fullName,
+        locale: user.locale,
       };
     },
   );
@@ -91,6 +95,25 @@ const authRoutes: FastifyPluginCallbackZod<{ secureCookies: boolean }> = (
     (request) => {
       if (!request.user) throw new Error("unreachable: requireAuth passed");
       return request.user;
+    },
+  );
+
+  fastify.patch(
+    "/me",
+    {
+      onRequest: requireAuth,
+      schema: {
+        body: updateMeBodySchema,
+        response: { 200: currentUserSchema, 401: problemSchema },
+      },
+    },
+    async (request) => {
+      if (!request.user) throw new Error("unreachable: requireAuth passed");
+
+      const { locale } = request.body;
+      await updateLocale(fastify.db, request.user.id, locale);
+
+      return { ...request.user, locale };
     },
   );
 

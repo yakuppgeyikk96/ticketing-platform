@@ -10,7 +10,7 @@ export interface CreateSessionInput {
 
 export type SessionUser = Pick<
   typeof users.$inferSelect,
-  "id" | "email" | "fullName"
+  "id" | "email" | "fullName" | "locale"
 >;
 
 export interface ActiveSession {
@@ -52,7 +52,12 @@ export async function findSessionByToken(
   const [row] = await db
     .select({
       sessionId: sessions.id,
-      user: { id: users.id, email: users.email, fullName: users.fullName },
+      user: {
+        id: users.id,
+        email: users.email,
+        fullName: users.fullName,
+        locale: users.locale,
+      },
     })
     .from(sessions)
     .innerJoin(users, eq(sessions.userId, users.id))

@@ -2,7 +2,8 @@ import { isUniqueViolation, outbox, users, type Db } from "@ticketing/db";
 import { ConflictError, UnauthorizedError } from "../errors.ts";
 import type { SessionUser } from "./sessions.ts";
 import { hashPassword, verifyPassword } from "./passwords.ts";
-import { and, sql, isNull } from "drizzle-orm";
+import { and, eq, sql, isNull } from "drizzle-orm";
+import type { Locale } from "@ticketing/contracts";
 
 export interface RegisterUserReturn {
   id: string;
@@ -12,7 +13,7 @@ export interface RegisterUserReturn {
 
 export async function registerUser(
   db: Db,
-  input: { email: string; password: string },
+  input: { email: string; password: string; locale: Locale },
 ): Promise<RegisterUserReturn> {
   try {
     const passwordHash = await hashPassword(input.password);
@@ -24,10 +25,12 @@ export async function registerUser(
           email: input.email,
           passwordHash,
           emailVerifiedAt: new Date(),
+          locale: input.locale,
         })
         .returning({
           id: users.id,
           email: users.email,
+          locale: users.locale,
           createdAt: users.createdAt,
         });
 
@@ -35,9 +38,11 @@ export async function registerUser(
         throw new Error("insert return no row");
       }
 
+      // The worker has no request to read the language from, so the event
+      // carries it.
       await tx.insert(outbox).values({
         type: "user.registered",
-        payload: { userId: user.id, email: user.email },
+        payload: { userId: user.id, email: user.email, locale: user.locale },
       });
 
       return {
@@ -68,6 +73,7 @@ export async function authenticate(
       id: users.id,
       email: users.email,
       fullName: users.fullName,
+      locale: users.locale,
       passwordHash: users.passwordHash,
     })
     .from(users)
@@ -91,5 +97,14 @@ export async function authenticate(
     id: user.id,
     email: user.email,
     fullName: user.fullName,
+    locale: user.locale,
   };
+}
+
+export async function updateLocale(
+  db: Db,
+  userId: string,
+  locale: Locale,
+): Promise<void> {
+  await db.update(users).set({ locale }).where(eq(users.id, userId));
 }
