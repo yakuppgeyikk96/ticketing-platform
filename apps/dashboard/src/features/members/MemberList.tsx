@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Member, MemberRole } from "@ticketing/contracts";
+import { useTranslation } from "react-i18next";
 import { describeError } from "../../api/errors.ts";
 import {
   listMembers,
@@ -26,18 +27,12 @@ const roleVariant: Record<MemberRole, "accent" | "neutral"> = {
   staff: "neutral",
 };
 
-const removeMessages = {
-  "/problems/cannot-remove-self":
-    "Kendini çıkaramazsın; başka bir owner çıkarabilir",
-  "/problems/last-owner": "Organizasyonun tek owner'ı çıkarılamaz",
-  "/problems/member-not-found": "Bu kişi artık üye değil",
-};
-
 export function MemberList({
   organizationId,
   role,
   query = "",
 }: MemberListProps) {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
 
   const members = useQuery({
@@ -59,7 +54,7 @@ export function MemberList({
   const columns: TableColumn<Member>[] = [
     {
       key: "email",
-      title: "E-posta",
+      title: t("members.column.email"),
       render: (email: string, member) => {
         const failed = removal.isError && removal.variables === member.userId;
         return (
@@ -67,7 +62,7 @@ export function MemberList({
             <span className={styles.email}>{email}</span>
             {failed && (
               <p role="alert" className={styles.error}>
-                {describeError(removal.error, removeMessages)}
+                {describeError(removal.error, t)}
               </p>
             )}
           </div>
@@ -76,9 +71,9 @@ export function MemberList({
     },
     {
       key: "role",
-      title: "Rol",
+      title: t("members.column.role"),
       render: (role: MemberRole) => (
-        <Badge variant={roleVariant[role]}>{role}</Badge>
+        <Badge variant={roleVariant[role]}>{t(`roles.${role}`)}</Badge>
       ),
     },
   ];
@@ -86,26 +81,26 @@ export function MemberList({
   if (canRemove) {
     columns.push({
       id: "actions",
-      title: "İşlemler",
+      title: t("common.actions"),
       hideTitle: true,
       align: "end",
       render: (member: Member) => (
-        <ActionMenu label={`${member.email} işlemleri`}>
+        <ActionMenu label={t("common.rowActions", { name: member.email })}>
           <Dropdown.Item
             danger
             disabled={removal.isPending}
             onClick={() => removal.mutate(member.userId)}
           >
-            Çıkar
+            {t("members.remove")}
           </Dropdown.Item>
         </ActionMenu>
       ),
     });
   }
 
-  if (members.isPending) return <p>Yükleniyor…</p>;
+  if (members.isPending) return <p>{t("common.loading")}</p>;
   if (members.isError) {
-    return <p role="alert">{describeError(members.error)}</p>;
+    return <p role="alert">{describeError(members.error, t)}</p>;
   }
 
   const rows = members.data.filter((member) =>
@@ -124,13 +119,14 @@ export function MemberList({
         removal.variables === member.userId &&
         styles.removing
       }
-      emptyMessage={
-        filtered ? "Aramayla eşleşen üye yok." : "Henüz bir üye yok."
-      }
+      emptyMessage={filtered ? t("members.emptyFiltered") : t("members.empty")}
       footer={
         filtered
-          ? `${rows.length} / ${members.data.length} üye`
-          : `${rows.length} üye`
+          ? t("members.countFiltered", {
+              shown: rows.length,
+              total: members.data.length,
+            })
+          : t("members.count", { count: rows.length })
       }
     />
   );

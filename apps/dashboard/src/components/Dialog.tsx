@@ -15,6 +15,8 @@ interface DialogProps {
   open: boolean;
   onClose: () => void;
   title: string;
+  // Accessible name of the "×" button; components take their copy as props.
+  closeLabel: string;
   placement?: "center" | "top";
   children: ReactNode;
 }
@@ -23,6 +25,7 @@ export function Dialog({
   open,
   onClose,
   title,
+  closeLabel,
   placement = "center",
   children,
 }: DialogProps) {
@@ -58,7 +61,7 @@ export function Dialog({
           <h2 id={titleId} className={styles.title}>
             {title}
           </h2>
-          <Button variant="icon" onClick={onClose} aria-label="Kapat">
+          <Button variant="icon" onClick={onClose} aria-label={closeLabel}>
             <IconX size="20" />
           </Button>
         </header>

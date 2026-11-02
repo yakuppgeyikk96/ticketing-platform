@@ -5,6 +5,7 @@ import type {
   OccurrenceStatus,
   Venue,
 } from "@ticketing/contracts";
+import { useTranslation } from "react-i18next";
 import { describeError } from "../../api/errors.ts";
 import {
   occurrenceKeys,
@@ -16,6 +17,7 @@ import { ActionMenu } from "../../components/ActionMenu.tsx";
 import { Badge, type BadgeProps } from "../../components/Badge.tsx";
 import { Dropdown } from "../../components/Dropdown.tsx";
 import { Table, type TableColumn } from "../../components/Table.tsx";
+import { localeTag } from "../../i18n/index.ts";
 import styles from "./OccurrenceList.module.css";
 
 interface OccurrenceListProps {
@@ -24,44 +26,49 @@ interface OccurrenceListProps {
   role: MemberRole;
 }
 
+// Dictionary keys, not sentences: resolved with t() where they render.
 const statusLabels: Record<
   OccurrenceStatus,
-  { label: string; variant: NonNullable<BadgeProps["variant"]> }
+  { labelKey: string; variant: NonNullable<BadgeProps["variant"]> }
 > = {
-  draft: { label: "Taslak", variant: "warning" },
-  on_sale: { label: "Satışta", variant: "success" },
-  sold_out: { label: "Tükendi", variant: "accent" },
-  cancelled: { label: "İptal", variant: "danger" },
-  ended: { label: "Bitti", variant: "neutral" },
+  draft: { labelKey: "occurrences.status.draft", variant: "warning" },
+  on_sale: { labelKey: "occurrences.status.on_sale", variant: "success" },
+  sold_out: { labelKey: "occurrences.status.sold_out", variant: "accent" },
+  cancelled: { labelKey: "occurrences.status.cancelled", variant: "danger" },
+  ended: { labelKey: "occurrences.status.ended", variant: "neutral" },
 };
 
 // UI copy of the service's manual transitions; system-owned statuses offer nothing.
 const actions: Record<
   OccurrenceStatus,
-  readonly { to: OccurrenceStatus; label: string; danger?: boolean }[]
+  readonly { to: OccurrenceStatus; labelKey: string; danger?: boolean }[]
 > = {
   draft: [
-    { to: "on_sale", label: "Satışa aç" },
-    { to: "cancelled", label: "İptal et", danger: true },
+    { to: "on_sale", labelKey: "occurrences.action.openSale" },
+    { to: "cancelled", labelKey: "occurrences.action.cancel", danger: true },
   ],
   on_sale: [
-    { to: "draft", label: "Taslağa çek" },
-    { to: "cancelled", label: "İptal et", danger: true },
+    { to: "draft", labelKey: "occurrences.action.unpublish" },
+    { to: "cancelled", labelKey: "occurrences.action.cancel", danger: true },
   ],
   sold_out: [],
   cancelled: [],
   ended: [],
 };
 
+// Problem types this list phrases for its own context (see describeError).
 const statusMessages = {
-  "/problems/invalid-transition":
-    "Gösterim bu arada değişmiş; liste yenilendi, tekrar dene",
-  "/problems/event-not-published": "Önce etkinliği yayınla",
+  "/problems/invalid-transition": "occurrences.errors.invalidTransition",
 };
 
-// An instant is shown in the venue's zone, whatever the viewer's clock says.
-function formatInVenue(iso: string, venue: Venue | undefined): string {
-  return new Intl.DateTimeFormat("tr-TR", {
+// An instant is shown in the venue's zone, whatever the viewer's clock says,
+// and in the viewer's language.
+function formatInVenue(
+  iso: string,
+  venue: Venue | undefined,
+  locale: string,
+): string {
+  return new Intl.DateTimeFormat(locale, {
     dateStyle: "medium",
     timeStyle: "short",
     timeZone: venue?.timezone,
@@ -73,6 +80,8 @@ export function OccurrenceList({
   eventId,
   role,
 }: OccurrenceListProps) {
+  const { t, i18n } = useTranslation();
+  const locale = localeTag(i18n.language);
   const queryClient = useQueryClient();
 
   const occurrences = useQuery(occurrencesQuery(organizationId, eventId));
@@ -99,7 +108,7 @@ export function OccurrenceList({
   const columns: TableColumn<Occurrence>[] = [
     {
       key: "startsAt",
-      title: "Tarih",
+      title: t("occurrences.column.date"),
       render: (startsAt: string, occurrence) => {
         const venue = venueById.get(occurrence.venueId);
         const failed =
@@ -108,12 +117,14 @@ export function OccurrenceList({
         return (
           <div className={styles.cell}>
             <span className={styles.when}>
-              <time dateTime={startsAt}>{formatInVenue(startsAt, venue)}</time>
+              <time dateTime={startsAt}>
+                {formatInVenue(startsAt, venue, locale)}
+              </time>
               {occurrence.endsAt && (
                 <span className={styles.until}>
                   {" → "}
                   <time dateTime={occurrence.endsAt}>
-                    {formatInVenue(occurrence.endsAt, venue)}
+                    {formatInVenue(occurrence.endsAt, venue, locale)}
                   </time>
                 </span>
               )}
@@ -121,7 +132,7 @@ export function OccurrenceList({
             {venue && <span className={styles.sub}>{venue.timezone}</span>}
             {failed && (
               <p role="alert" className={styles.error}>
-                {describeError(statusChange.error, statusMessages)}
+                {describeError(statusChange.error, t, statusMessages)}
               </p>
             )}
           </div>
@@ -130,7 +141,7 @@ export function OccurrenceList({
     },
     {
       key: "venueId",
-      title: "Mekân",
+      title: t("occurrences.column.venue"),
       render: (venueId: string) => {
         const venue = venueById.get(venueId);
         if (!venue) return "…";
@@ -144,10 +155,10 @@ export function OccurrenceList({
     },
     {
       key: "status",
-      title: "Durum",
+      title: t("occurrences.column.status"),
       render: (status: OccurrenceStatus) => (
         <Badge variant={statusLabels[status].variant} dot>
-          {statusLabels[status].label}
+          {t(statusLabels[status].labelKey)}
         </Badge>
       ),
     },
@@ -156,14 +167,14 @@ export function OccurrenceList({
   if (canEdit) {
     columns.push({
       id: "actions",
-      title: "İşlemler",
+      title: t("common.actions"),
       hideTitle: true,
       align: "end",
       render: (occurrence: Occurrence) => {
         const available = actions[occurrence.status];
         if (available.length === 0) return null;
         return (
-          <ActionMenu label="Gösterim işlemleri">
+          <ActionMenu label={t("occurrences.rowActions")}>
             {available.map((action) => (
               <Dropdown.Item
                 key={action.to}
@@ -176,7 +187,7 @@ export function OccurrenceList({
                   })
                 }
               >
-                {action.label}
+                {t(action.labelKey)}
               </Dropdown.Item>
             ))}
           </ActionMenu>
@@ -185,9 +196,9 @@ export function OccurrenceList({
     });
   }
 
-  if (occurrences.isPending) return <p>Yükleniyor…</p>;
+  if (occurrences.isPending) return <p>{t("common.loading")}</p>;
   if (occurrences.isError) {
-    return <p role="alert">{describeError(occurrences.error)}</p>;
+    return <p role="alert">{describeError(occurrences.error, t)}</p>;
   }
 
   return (
@@ -200,8 +211,8 @@ export function OccurrenceList({
         statusChange.variables.occurrenceId === occurrence.id &&
         styles.changing
       }
-      emptyMessage="Henüz gösterim yok."
-      footer={`${occurrences.data.length} gösterim`}
+      emptyMessage={t("occurrences.empty")}
+      footer={t("occurrences.count", { count: occurrences.data.length })}
     />
   );
 }

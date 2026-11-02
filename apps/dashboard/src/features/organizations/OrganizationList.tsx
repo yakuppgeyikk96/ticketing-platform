@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import type { MemberRole, UserOrganization } from "@ticketing/contracts";
+import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router";
 import { describeError } from "../../api/errors.ts";
 import { myOrganizationsQuery } from "../../api/organizations.ts";
@@ -22,14 +23,15 @@ const roleVariant: Record<MemberRole, "accent" | "neutral"> = {
 };
 
 export function OrganizationList({ query = "" }: OrganizationListProps) {
+  const { t } = useTranslation();
   const organizations = useQuery(myOrganizationsQuery);
   const navigate = useNavigate();
 
-  // Inside the component: the actions column needs `navigate`.
+  // Inside the component: the actions column needs `navigate` and `t`.
   const columns: TableColumn<UserOrganization>[] = [
     {
       key: "name",
-      title: "Ad",
+      title: t("organizations.column.name"),
       render: (name: string, org) => (
         <Link to={`/organizations/${org.id}`} className={styles.name}>
           {name}
@@ -38,38 +40,38 @@ export function OrganizationList({ query = "" }: OrganizationListProps) {
     },
     {
       key: "slug",
-      title: "Slug",
+      title: t("organizations.column.slug"),
       render: (slug: string) => <code className={styles.slug}>{slug}</code>,
     },
     {
       key: "role",
-      title: "Rolün",
+      title: t("organizations.column.role"),
       // Contextual typing cannot pick the union member from `key` alone; annotate.
       render: (role: MemberRole) => (
-        <Badge variant={roleVariant[role]}>{role}</Badge>
+        <Badge variant={roleVariant[role]}>{t(`roles.${role}`)}</Badge>
       ),
     },
     {
       id: "actions",
-      title: "İşlemler",
+      title: t("common.actions"),
       hideTitle: true,
       align: "end",
       render: (org: UserOrganization) => (
-        <ActionMenu label={`${org.name} işlemleri`}>
+        <ActionMenu label={t("common.rowActions", { name: org.name })}>
           <Dropdown.Item
             onClick={() => void navigate(`/organizations/${org.id}`)}
           >
-            Genel bakış
+            {t("nav.overview")}
           </Dropdown.Item>
           <Dropdown.Item
             onClick={() => void navigate(`/organizations/${org.id}/events`)}
           >
-            Etkinlikler
+            {t("nav.events")}
           </Dropdown.Item>
           <Dropdown.Item
             onClick={() => void navigate(`/organizations/${org.id}/members`)}
           >
-            Üyeler
+            {t("nav.members")}
           </Dropdown.Item>
         </ActionMenu>
       ),
@@ -77,11 +79,11 @@ export function OrganizationList({ query = "" }: OrganizationListProps) {
   ];
 
   if (organizations.isPending) {
-    return <p>Yükleniyor...</p>;
+    return <p>{t("common.loading")}</p>;
   }
 
   if (organizations.isError) {
-    return <p role="alert">{describeError(organizations.error)}</p>;
+    return <p role="alert">{describeError(organizations.error, t)}</p>;
   }
 
   const rows = organizations.data.filter((org) =>
@@ -95,14 +97,15 @@ export function OrganizationList({ query = "" }: OrganizationListProps) {
       data={rows}
       rowKey="id"
       emptyMessage={
-        filtered
-          ? "Aramayla eşleşen organizasyon yok."
-          : "Henüz bir organizasyonun yok."
+        filtered ? t("organizations.emptyFiltered") : t("organizations.empty")
       }
       footer={
         filtered
-          ? `${rows.length} / ${organizations.data.length} organizasyon`
-          : `${rows.length} organizasyon`
+          ? t("organizations.countFiltered", {
+              shown: rows.length,
+              total: organizations.data.length,
+            })
+          : t("organizations.count", { count: rows.length })
       }
     />
   );

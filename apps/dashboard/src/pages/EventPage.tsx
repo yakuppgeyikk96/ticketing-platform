@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { EventStatus, UserOrganization } from "@ticketing/contracts";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Link, useOutletContext, useParams } from "react-router";
 import { ApiError } from "../api/client.ts";
 import { describeError } from "../api/errors.ts";
@@ -25,6 +26,7 @@ import { OccurrenceList } from "../features/occurrences/OccurrenceList.tsx";
 import styles from "./EventPage.module.css";
 
 export function EventPage() {
+  const { t } = useTranslation();
   const { organization } = useOutletContext<{
     organization: UserOrganization;
   }>();
@@ -58,7 +60,7 @@ export function EventPage() {
 
   const eventsPath = `/organizations/${organizationId}/events`;
 
-  if (event.isPending) return <p>Yükleniyor…</p>;
+  if (event.isPending) return <p>{t("common.loading")}</p>;
 
   if (event.isError) {
     const notFound =
@@ -66,9 +68,9 @@ export function EventPage() {
     return (
       <>
         <p role="alert">
-          {notFound ? "Etkinlik bulunamadı." : describeError(event.error)}
+          {notFound ? t("events.notFound") : describeError(event.error, t)}
         </p>
-        <Link to={eventsPath}>Etkinliklere dön</Link>
+        <Link to={eventsPath}>{t("events.backToList")}</Link>
       </>
     );
   }
@@ -82,14 +84,14 @@ export function EventPage() {
       <header className={styles.header}>
         <Link to={eventsPath} className={styles.back}>
           <IconArrowLeft size="16" />
-          Etkinlikler
+          {t("nav.events")}
         </Link>
         <div className={styles.titleRow}>
           <div className={styles.text}>
             <div className={styles.titleLine}>
               <h1>{event.data.title}</h1>
               <Badge variant={status.variant} dot>
-                {status.label}
+                {t(status.labelKey)}
               </Badge>
             </div>
             <p className={styles.meta}>
@@ -110,7 +112,7 @@ export function EventPage() {
                   disabled={statusChange.isPending}
                   onClick={() => statusChange.mutate(action.to)}
                 >
-                  {action.label}
+                  {t(action.labelKey)}
                 </Button>
               ))}
             </div>
@@ -118,21 +120,21 @@ export function EventPage() {
         </div>
         {statusChange.isError && (
           <p role="alert" className={styles.error}>
-            {describeError(statusChange.error, eventStatusMessages)}
+            {describeError(statusChange.error, t, eventStatusMessages)}
           </p>
         )}
       </header>
 
       <section className={styles.section}>
         <div className={styles.sectionHeader}>
-          <h2>Gösterimler</h2>
+          <h2>{t("occurrences.title")}</h2>
           {canEdit && (
             <Button
               variant="secondary"
               icon={<IconPlus size="16" />}
               onClick={() => setCreating(true)}
             >
-              Yeni gösterim
+              {t("occurrences.new")}
             </Button>
           )}
         </div>
@@ -146,7 +148,8 @@ export function EventPage() {
       <Dialog
         open={creating}
         onClose={() => setCreating(false)}
-        title="Yeni gösterim"
+        title={t("occurrences.new")}
+        closeLabel={t("dialog.close")}
       >
         <CreateOccurrenceForm
           organizationId={organizationId}

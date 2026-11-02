@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import type { ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 import { NavLink } from "react-router";
 import { myOrganizationsQuery } from "../api/organizations.ts";
 import { IconBuilding } from "../components/icons/IconBuilding.tsx";
@@ -12,7 +13,8 @@ import styles from "./Sidebar.module.css";
 
 interface SidebarItem {
   id: string;
-  title: string;
+  // Dictionary key; resolved where it renders so the list stays static.
+  titleKey: string;
   route: string;
   icon: ReactNode;
   end?: boolean;
@@ -21,7 +23,7 @@ interface SidebarItem {
 const appItems: SidebarItem[] = [
   {
     id: "app-organizations",
-    title: "Organizasyonlar",
+    titleKey: "nav.organizations",
     route: "/organizations",
     icon: <IconBuilding size="16" />,
     end: true,
@@ -33,26 +35,26 @@ function organizationItems(organizationId: string): SidebarItem[] {
   return [
     {
       id: "org-overview",
-      title: "Genel bakış",
+      titleKey: "nav.overview",
       route: `/organizations/${organizationId}`,
       icon: <IconLayoutDashboard size="16" />,
       end: true,
     },
     {
       id: "org-events",
-      title: "Etkinlikler",
+      titleKey: "nav.events",
       route: `/organizations/${organizationId}/events`,
       icon: <IconCalendar size="16" />,
     },
     {
       id: "org-venues",
-      title: "Mekânlar",
+      titleKey: "nav.venues",
       route: `/organizations/${organizationId}/venues`,
       icon: <IconMapPin size="16" />,
     },
     {
       id: "org-members",
-      title: "Üyeler",
+      titleKey: "nav.members",
       route: `/organizations/${organizationId}/members`,
       icon: <IconUsers size="16" />,
     },
@@ -60,6 +62,7 @@ function organizationItems(organizationId: string): SidebarItem[] {
 }
 
 export function Sidebar() {
+  const { t } = useTranslation();
   const [organizationId] = useCurrentOrganizationId();
   // Already fetched by the header switcher; this reads the cache for the group label.
   const organizations = useQuery(myOrganizationsQuery);
@@ -67,29 +70,7 @@ export function Sidebar() {
     (org) => org.id === organizationId,
   )?.name;
 
-  return (
-    <aside className="app-sidebar">
-      <nav aria-label="Ana menü" className={styles.nav}>
-        <ul className={styles.list} role="list">
-          {appItems.map(renderItem)}
-        </ul>
-        {organizationId && (
-          <div className={styles.group}>
-            <span className={styles.groupLabel}>
-              {organizationName ?? "Organizasyon"}
-            </span>
-            <ul className={styles.list} role="list" aria-label="Organizasyon">
-              {organizationItems(organizationId).map(renderItem)}
-            </ul>
-          </div>
-        )}
-      </nav>
-    </aside>
-  );
-}
-
-function renderItem(item: SidebarItem) {
-  return (
+  const renderItem = (item: SidebarItem) => (
     <li key={item.id}>
       {/* CSS module keys are `string | undefined` under noUncheckedIndexedAccess. */}
       <NavLink
@@ -98,8 +79,32 @@ function renderItem(item: SidebarItem) {
         className={styles.link ?? ""}
       >
         <span className={styles.icon}>{item.icon}</span>
-        {item.title}
+        {t(item.titleKey)}
       </NavLink>
     </li>
+  );
+
+  return (
+    <aside className="app-sidebar">
+      <nav aria-label={t("nav.mainMenu")} className={styles.nav}>
+        <ul className={styles.list} role="list">
+          {appItems.map(renderItem)}
+        </ul>
+        {organizationId && (
+          <div className={styles.group}>
+            <span className={styles.groupLabel}>
+              {organizationName ?? t("nav.organization")}
+            </span>
+            <ul
+              className={styles.list}
+              role="list"
+              aria-label={t("nav.organization")}
+            >
+              {organizationItems(organizationId).map(renderItem)}
+            </ul>
+          </div>
+        )}
+      </nav>
+    </aside>
   );
 }

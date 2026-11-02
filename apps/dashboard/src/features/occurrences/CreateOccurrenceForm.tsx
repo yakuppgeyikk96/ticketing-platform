@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { CreateOccurrenceInput } from "@ticketing/contracts";
 import type { SubmitEvent } from "react";
+import { useTranslation } from "react-i18next";
 import {
   describeError,
   fieldErrors,
@@ -19,14 +20,9 @@ interface CreateOccurrenceFormProps {
   organizationId: string;
   eventId: string;
   onSuccess?: () => void;
-  // Given when the form sits in a dialog: shows a "Vazgeç" button.
+  // Given when the form sits in a dialog: shows a cancel button.
   onCancel?: () => void;
 }
-
-const createMessages = {
-  "/problems/event-archived": "Arşivlenmiş etkinliğe gösterim eklenemez",
-  "/problems/venue-not-found": "Mekân bulunamadı; liste yenilendi",
-};
 
 export function CreateOccurrenceForm({
   organizationId,
@@ -34,6 +30,7 @@ export function CreateOccurrenceForm({
   onSuccess,
   onCancel,
 }: CreateOccurrenceFormProps) {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const venues = useQuery(venuesQuery(organizationId));
 
@@ -75,18 +72,18 @@ export function CreateOccurrenceForm({
 
   const errors = fieldErrors(mutation.error);
 
-  if (venues.isPending) return <p>Yükleniyor…</p>;
+  if (venues.isPending) return <p>{t("common.loading")}</p>;
   if (venues.isError) {
-    return <p role="alert">{describeError(venues.error)}</p>;
+    return <p role="alert">{describeError(venues.error, t)}</p>;
   }
   if (venues.data.length === 0) {
-    return <p>Gösterim eklemek için önce organizasyona bir mekân ekle.</p>;
+    return <p>{t("occurrences.form.needVenue")}</p>;
   }
 
   return (
     <Form onSubmit={handleSubmit}>
       <SelectField
-        label="Mekân"
+        label={t("occurrences.form.venue")}
         name="venueId"
         required
         autoFocus
@@ -99,30 +96,32 @@ export function CreateOccurrenceForm({
         ))}
       </SelectField>
       <Field
-        label="Başlangıç"
+        label={t("occurrences.form.startsAt")}
         name="startsAt"
         type="datetime-local"
         required
-        hint="Mekânın saat dilimine göre."
+        hint={t("occurrences.form.startsAtHint")}
         error={errors.startsAt}
       />
       <Field
-        label="Bitiş"
+        label={t("occurrences.form.endsAt")}
         name="endsAt"
         type="datetime-local"
         error={errors.endsAt}
       />
       {mutation.isError && isFormLevelError(mutation.error) && (
-        <Form.Error>{describeError(mutation.error, createMessages)}</Form.Error>
+        <Form.Error>{describeError(mutation.error, t)}</Form.Error>
       )}
       <Form.Actions>
         {onCancel && (
           <Button type="button" variant="secondary" onClick={onCancel}>
-            Vazgeç
+            {t("common.cancel")}
           </Button>
         )}
         <Button busy={mutation.isPending}>
-          {mutation.isPending ? "Ekleniyor…" : "Gösterim ekle"}
+          {mutation.isPending
+            ? t("common.adding")
+            : t("occurrences.form.submit")}
         </Button>
       </Form.Actions>
     </Form>

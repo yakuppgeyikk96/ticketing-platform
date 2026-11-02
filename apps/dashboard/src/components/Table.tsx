@@ -27,7 +27,8 @@ interface TableProps<T> {
   columns: TableColumn<T>[];
   data: T[];
   rowKey: keyof T | ((row: T) => string | number);
-  emptyMessage?: string;
+  // Required: the component has no language of its own.
+  emptyMessage: string;
   // A line under the table: counts, pagination.
   footer?: ReactNode;
   // Per-row class, for transient states such as "being updated".
@@ -38,7 +39,7 @@ export function Table<T extends Record<string, unknown>>({
   columns,
   data,
   rowKey,
-  emptyMessage = "Kayıt yok.",
+  emptyMessage,
   footer,
   rowClassName,
 }: TableProps<T>) {

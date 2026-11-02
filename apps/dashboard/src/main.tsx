@@ -2,6 +2,8 @@
 import "@ticketing/design/tokens.css";
 import "@ticketing/design/reset.css";
 import "./styles/app.css";
+// Starts i18next before the first render so no component sees a missing key.
+import "./i18n/index.ts";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { App } from "./App.tsx";

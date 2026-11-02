@@ -1,9 +1,11 @@
+import { useTranslation } from "react-i18next";
 import { Link, Navigate } from "react-router";
 import { useSession } from "../features/auth/useSession.ts";
 import { RegisterForm } from "../features/auth/RegisterForm.tsx";
 import styles from "./AuthPage.module.css";
 
 export function RegisterPage() {
+  const { t } = useTranslation();
   const session = useSession();
 
   // Already logged in: nothing to register, go to the app.
@@ -18,14 +20,15 @@ export function RegisterPage() {
         <section className={styles.card} aria-labelledby="register-title">
           <header className={styles.header}>
             <h1 id="register-title" className={styles.title}>
-              Kayıt ol
+              {t("auth.register.title")}
             </h1>
-            <p className={styles.subtitle}>Hesap oluşturup devam edin.</p>
+            <p className={styles.subtitle}>{t("auth.register.subtitle")}</p>
           </header>
           <RegisterForm />
         </section>
         <p className={styles.help}>
-          Zaten hesabınız var mı? <Link to="/login">Giriş yapın</Link>
+          {t("auth.register.haveAccount")}{" "}
+          <Link to="/login">{t("auth.register.loginLink")}</Link>
         </p>
       </div>
     </main>

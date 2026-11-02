@@ -1,5 +1,6 @@
 import { problemSchema, type ProblemBody } from "@ticketing/contracts";
 import type { ZodType } from "zod";
+import { i18n } from "../i18n/index.ts";
 
 export class ApiError extends Error {
   readonly status: number;
@@ -21,10 +22,13 @@ export async function request<T>(
     body?: unknown;
   },
 ): Promise<T> {
+  // The API renders validation messages in this language.
+  const headers: Record<string, string> = { "accept-language": i18n.language };
+  if (init.body !== undefined) headers["content-type"] = "application/json";
+
   const res = await fetch("/api" + path, {
     method: init.method ?? "GET",
-    headers:
-      init.body !== undefined ? { "content-type": "application/json" } : {},
+    headers,
     body: init.body !== undefined ? JSON.stringify(init.body) : null,
   });
 

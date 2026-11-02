@@ -1,4 +1,5 @@
 import type { SubmitEvent } from "react";
+import { useTranslation } from "react-i18next";
 import { login } from "../../api/auth.ts";
 import { describeError } from "../../api/errors.ts";
 import { textField } from "../../lib/form.ts";
@@ -10,6 +11,7 @@ import { Form } from "../../components/Form.tsx";
 import styles from "./AuthForm.module.css";
 
 export function LoginForm() {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
 
   const mutation = useMutation({
@@ -31,14 +33,14 @@ export function LoginForm() {
   return (
     <Form onSubmit={handleSubmit} className={styles.form}>
       <Field
-        label="E-posta"
+        label={t("auth.email")}
         name="email"
         type="email"
         autoComplete="username"
         required
       />
       <Field
-        label="Parola"
+        label={t("auth.password")}
         name="password"
         type="password"
         autoComplete="current-password"
@@ -46,17 +48,14 @@ export function LoginForm() {
       />
       {mutation.isError && (
         <p role="alert" className={styles.error}>
-          {describeError(mutation.error, loginMessages)}
+          {describeError(mutation.error, t)}
         </p>
       )}
       <Button busy={mutation.isPending} className={styles.submit}>
-        {mutation.isPending ? "Giriş yapılıyor…" : "Giriş yap"}
+        {mutation.isPending
+          ? t("auth.login.submitting")
+          : t("auth.login.submit")}
       </Button>
     </Form>
   );
 }
-
-// Messages this screen wants to phrase itself, keyed by problem type.
-const loginMessages = {
-  "/problems/invalid-credentials": "E-posta veya parola hatalı",
-};

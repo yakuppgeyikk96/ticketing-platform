@@ -17,7 +17,9 @@
     "react-dom": "catalog:",
     "zod": "catalog:",
     "@tanstack/react-query": "catalog:",
-    "react-router": "catalog:"
+    "react-router": "catalog:",
+    "i18next": "catalog:",
+    "react-i18next": "catalog:"
   },
   "devDependencies": {
     "@ticketing/tsconfig": "workspace:*",

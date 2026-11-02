@@ -87,7 +87,11 @@ test("POST /auth/register takes the locale from the body, else from Accept-Langu
   const fromBody = await app.inject({
     method: "POST",
     url: "/auth/register",
-    payload: { email: uniqueEmail(), password: "correct horse battery", locale: "en" },
+    payload: {
+      email: uniqueEmail(),
+      password: "correct horse battery",
+      locale: "en",
+    },
   });
   assert.equal(fromBody.statusCode, 201);
   const bodyRows = await outboxRowsFor(fromBody.json<{ id: string }>().id);

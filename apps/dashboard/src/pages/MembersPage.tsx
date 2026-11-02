@@ -1,5 +1,6 @@
 import type { UserOrganization } from "@ticketing/contracts";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useOutletContext } from "react-router";
 import { Button } from "../components/Button.tsx";
 import { Dialog } from "../components/Dialog.tsx";
@@ -11,6 +12,7 @@ import { AddMemberForm } from "../features/members/AddMemberForm.tsx";
 import { MemberList } from "../features/members/MemberList.tsx";
 
 export function MembersPage() {
+  const { t } = useTranslation();
   const [adding, setAdding] = useState(false);
   const [query, setQuery] = useState("");
 
@@ -24,12 +26,16 @@ export function MembersPage() {
   return (
     <>
       <PageHeader
-        title="Üyeler"
-        description="Bu organizasyona erişimi olan hesaplar. Sahipler üye çıkarabilir, yöneticiler ekleyebilir."
+        title={t("members.title")}
+        description={t("members.description")}
       />
       <Toolbar
         start={
-          <SearchField label="Üye ara…" value={query} onChange={setQuery} />
+          <SearchField
+            label={t("members.search")}
+            value={query}
+            onChange={setQuery}
+          />
         }
         end={
           canEdit && (
@@ -37,7 +43,7 @@ export function MembersPage() {
               icon={<IconPlus size="16" />}
               onClick={() => setAdding(true)}
             >
-              Üye ekle
+              {t("members.add")}
             </Button>
           )
         }
@@ -48,7 +54,12 @@ export function MembersPage() {
         query={query}
       />
 
-      <Dialog open={adding} onClose={() => setAdding(false)} title="Üye ekle">
+      <Dialog
+        open={adding}
+        onClose={() => setAdding(false)}
+        title={t("members.add")}
+        closeLabel={t("dialog.close")}
+      >
         <AddMemberForm
           organizationId={organization.id}
           onSuccess={() => setAdding(false)}

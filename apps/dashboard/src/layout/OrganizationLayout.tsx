@@ -1,5 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { UserOrganization } from "@ticketing/contracts";
+import { useTranslation } from "react-i18next";
 import { Link, Outlet, useParams } from "react-router";
 import { ApiError } from "../api/client.ts";
 import { describeError } from "../api/errors.ts";
@@ -10,6 +11,7 @@ import {
 } from "../api/organizations.ts";
 
 export function OrganizationLayout() {
+  const { t } = useTranslation();
   const { organizationId } = useParams();
   if (!organizationId) throw new Error("route param organizationId missing");
 
@@ -24,7 +26,7 @@ export function OrganizationLayout() {
   });
 
   if (organization.isPending) {
-    return <p>Yükleniyor…</p>;
+    return <p>{t("common.loading")}</p>;
   }
 
   if (organization.isError) {
@@ -35,10 +37,10 @@ export function OrganizationLayout() {
       <>
         <p role="alert">
           {notFound
-            ? "Organizasyon bulunamadı."
-            : describeError(organization.error)}
+            ? t("organizations.notFound")
+            : describeError(organization.error, t)}
         </p>
-        <Link to="/organizations">Organizasyonlarıma dön</Link>
+        <Link to="/organizations">{t("organizations.backToList")}</Link>
       </>
     );
   }

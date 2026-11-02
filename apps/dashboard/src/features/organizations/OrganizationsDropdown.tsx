@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { Dropdown } from "../../components/Dropdown.tsx";
 import { IconChevronDown } from "../../components/icons/IconChevronDown.tsx";
 import { myOrganizationsQuery } from "../../api/organizations.ts";
@@ -6,12 +7,13 @@ import styles from "./OrganizationsDropdown.module.css";
 import { useCurrentOrganizationId } from "./useCurrentOrganizationId.ts";
 
 export function OrganizationsDropdown() {
+  const { t } = useTranslation();
   const organizations = useQuery(myOrganizationsQuery);
   const [organizationId, selectOrganization] = useCurrentOrganizationId();
 
-  if (organizations.isPending) return <p>Organizasyonlar yükleniyor…</p>;
+  if (organizations.isPending) return <p>{t("organizations.loadingList")}</p>;
 
-  if (organizations.isError) return <p>Organizasyonlar alınamadı</p>;
+  if (organizations.isError) return <p>{t("organizations.listFailed")}</p>;
 
   const selectedOrganization = organizations.data.find(
     (org) => org.id === organizationId,
@@ -21,11 +23,11 @@ export function OrganizationsDropdown() {
     <Dropdown
       triggerClassName={styles.trigger ?? ""}
       align="start"
-      label="Organizasyon seç"
+      label={t("organizations.select")}
       trigger={
         <>
           <span className={styles.name}>
-            {selectedOrganization?.name ?? "Organizasyon seç"}
+            {selectedOrganization?.name ?? t("organizations.select")}
           </span>
           <span className={styles.chevron}>
             <IconChevronDown size="16" />

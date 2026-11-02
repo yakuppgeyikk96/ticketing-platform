@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { memberRoleSchema, type AddMemberInput } from "@ticketing/contracts";
 import type { SubmitEvent } from "react";
+import { useTranslation } from "react-i18next";
 import {
   describeError,
   fieldErrors,
@@ -16,20 +17,16 @@ import { textField } from "../../lib/form.ts";
 interface AddMemberFormProps {
   organizationId: string;
   onSuccess?: () => void;
-  // Given when the form sits in a dialog: shows a "Vazgeç" button.
+  // Given when the form sits in a dialog: shows a cancel button.
   onCancel?: () => void;
 }
-
-const addMemberMessages = {
-  "/problems/user-not-found": "Bu e-postayla kayıtlı hesap yok",
-  "/problems/already-member": "Bu kullanıcı zaten üye",
-};
 
 export function AddMemberForm({
   organizationId,
   onSuccess,
   onCancel,
 }: AddMemberFormProps) {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
 
   const mutation = useMutation({
@@ -67,35 +64,37 @@ export function AddMemberForm({
   return (
     <Form onSubmit={handleSubmit}>
       <Field
-        label="E-posta"
+        label={t("members.form.email")}
         name="email"
         type="email"
         required
         maxLength={254}
         autoFocus
-        hint="Kişinin bu e-postayla kayıtlı bir hesabı olmalı."
+        hint={t("members.form.emailHint")}
         error={errors.email}
       />
-      <SelectField label="Rol" name="role" defaultValue="staff">
+      <SelectField
+        label={t("members.form.role")}
+        name="role"
+        defaultValue="staff"
+      >
         {memberRoleSchema.options.map((role) => (
           <option key={role} value={role}>
-            {role}
+            {t(`roles.${role}`)}
           </option>
         ))}
       </SelectField>
       {mutation.isError && isFormLevelError(mutation.error) && (
-        <Form.Error>
-          {describeError(mutation.error, addMemberMessages)}
-        </Form.Error>
+        <Form.Error>{describeError(mutation.error, t)}</Form.Error>
       )}
       <Form.Actions>
         {onCancel && (
           <Button type="button" variant="secondary" onClick={onCancel}>
-            Vazgeç
+            {t("common.cancel")}
           </Button>
         )}
         <Button busy={mutation.isPending}>
-          {mutation.isPending ? "Ekleniyor…" : "Ekle"}
+          {mutation.isPending ? t("common.adding") : t("members.form.submit")}
         </Button>
       </Form.Actions>
     </Form>

@@ -1,5 +1,6 @@
 import type { UserOrganization } from "@ticketing/contracts";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useOutletContext } from "react-router";
 import { Button } from "../components/Button.tsx";
 import { Dialog } from "../components/Dialog.tsx";
@@ -13,15 +14,13 @@ import {
   EventList,
   type EventStatusFilter,
 } from "../features/events/EventList.tsx";
+import { eventStatusLabels } from "../features/events/eventStatus.ts";
 
-const statusOptions = [
-  { value: "all", label: "Tümü" },
-  { value: "published", label: "Yayında" },
-  { value: "draft", label: "Taslak" },
-  { value: "archived", label: "Arşiv" },
-] as const satisfies readonly { value: EventStatusFilter; label: string }[];
+// Filter order on screen; labels come from the shared status dictionary.
+const statusFilters = ["published", "draft", "archived"] as const;
 
 export function EventsPage() {
+  const { t } = useTranslation();
   const [creating, setCreating] = useState(false);
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<EventStatusFilter>("all");
@@ -33,22 +32,30 @@ export function EventsPage() {
   const canEdit =
     organization.role === "owner" || organization.role === "admin";
 
+  const statusOptions: { value: EventStatusFilter; label: string }[] = [
+    { value: "all", label: t("events.all") },
+    ...statusFilters.map((value) => ({
+      value,
+      label: t(eventStatusLabels[value].labelKey),
+    })),
+  ];
+
   return (
     <>
       <PageHeader
-        title="Etkinlikler"
-        description="Bu organizasyonun etkinlikleri. Yayınlananlar satışa açılabilir, taslaklar sadece burada görünür."
+        title={t("events.title")}
+        description={t("events.description")}
       />
       <Toolbar
         start={
           <>
             <SearchField
-              label="Etkinlik ara…"
+              label={t("events.search")}
               value={query}
               onChange={setQuery}
             />
             <SegmentedControl
-              label="Durum filtresi"
+              label={t("events.statusFilter")}
               options={statusOptions}
               value={status}
               onChange={setStatus}
@@ -61,7 +68,7 @@ export function EventsPage() {
               icon={<IconPlus size="16" />}
               onClick={() => setCreating(true)}
             >
-              Yeni etkinlik
+              {t("events.new")}
             </Button>
           )
         }
@@ -76,7 +83,8 @@ export function EventsPage() {
       <Dialog
         open={creating}
         onClose={() => setCreating(false)}
-        title="Yeni etkinlik"
+        title={t("events.new")}
+        closeLabel={t("dialog.close")}
       >
         <CreateEventForm
           organizationId={organization.id}

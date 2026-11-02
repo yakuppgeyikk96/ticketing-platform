@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Event, EventStatus, MemberRole } from "@ticketing/contracts";
+import { useTranslation } from "react-i18next";
 import { Link } from "react-router";
 import styles from "./EventList.module.css";
 import {
@@ -31,6 +32,7 @@ export function EventList({
   query = "",
   status = "all",
 }: EventListProps) {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
 
   const events = useQuery(eventsQuery(organizationId));
@@ -55,7 +57,7 @@ export function EventList({
   const columns: TableColumn<Event>[] = [
     {
       key: "title",
-      title: "Etkinlik",
+      title: t("events.column.title"),
       render: (title: string, event) => {
         const failed =
           statusChange.isError && statusChange.variables.eventId === event.id;
@@ -70,7 +72,7 @@ export function EventList({
             <code className={styles.slug}>{event.slug}</code>
             {failed && (
               <p role="alert" className={styles.error}>
-                {describeError(statusChange.error, eventStatusMessages)}
+                {describeError(statusChange.error, t, eventStatusMessages)}
               </p>
             )}
           </div>
@@ -79,10 +81,10 @@ export function EventList({
     },
     {
       key: "status",
-      title: "Durum",
+      title: t("events.column.status"),
       render: (status: EventStatus) => (
         <Badge variant={eventStatusLabels[status].variant} dot>
-          {eventStatusLabels[status].label}
+          {t(eventStatusLabels[status].labelKey)}
         </Badge>
       ),
     },
@@ -91,14 +93,14 @@ export function EventList({
   if (canEdit) {
     columns.push({
       id: "actions",
-      title: "İşlemler",
+      title: t("common.actions"),
       hideTitle: true,
       align: "end",
       render: (event: Event) => {
         const available = eventTransitions[event.status];
         if (available.length === 0) return null;
         return (
-          <ActionMenu label={`${event.title} işlemleri`}>
+          <ActionMenu label={t("common.rowActions", { name: event.title })}>
             {available.map((action) => (
               <Dropdown.Item
                 key={action.to}
@@ -108,7 +110,7 @@ export function EventList({
                   statusChange.mutate({ eventId: event.id, status: action.to })
                 }
               >
-                {action.label}
+                {t(action.labelKey)}
               </Dropdown.Item>
             ))}
           </ActionMenu>
@@ -118,11 +120,11 @@ export function EventList({
   }
 
   if (events.isPending) {
-    return <p>Yükleniyor…</p>;
+    return <p>{t("common.loading")}</p>;
   }
 
   if (events.isError) {
-    return <p role="alert">{describeError(events.error)}</p>;
+    return <p role="alert">{describeError(events.error, t)}</p>;
   }
 
   const rows = events.data.filter(
@@ -142,13 +144,14 @@ export function EventList({
         statusChange.variables.eventId === event.id &&
         styles.changing
       }
-      emptyMessage={
-        filtered ? "Filtreyle eşleşen etkinlik yok." : "Henüz bir etkinlik yok."
-      }
+      emptyMessage={filtered ? t("events.emptyFiltered") : t("events.empty")}
       footer={
         filtered
-          ? `${rows.length} / ${events.data.length} etkinlik`
-          : `${rows.length} etkinlik`
+          ? t("events.countFiltered", {
+              shown: rows.length,
+              total: events.data.length,
+            })
+          : t("events.count", { count: rows.length })
       }
     />
   );

@@ -25,6 +25,7 @@ const user = {
   id: "01a0df5c-0085-7a27-8f78-c2f13f239902",
   email: "vera@example.com",
   fullName: null,
+  locale: "tr",
 };
 
 test("returns the parsed body on success and calls the API under /api", async () => {

@@ -1,5 +1,6 @@
 import type { UserOrganization } from "@ticketing/contracts";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useOutletContext } from "react-router";
 import { Button } from "../components/Button.tsx";
 import { Dialog } from "../components/Dialog.tsx";
@@ -11,6 +12,7 @@ import { CreateVenueForm } from "../features/venues/CreateVenueForm.tsx";
 import { VenueList } from "../features/venues/VenueList.tsx";
 
 export function VenuesPage() {
+  const { t } = useTranslation();
   const [creating, setCreating] = useState(false);
   const [query, setQuery] = useState("");
 
@@ -24,12 +26,16 @@ export function VenuesPage() {
   return (
     <>
       <PageHeader
-        title="Mekânlar"
-        description="Gösterimlerin yapıldığı yerler. Saat dilimi, gösterim saatlerinin hangi saate göre girileceğini belirler."
+        title={t("venues.title")}
+        description={t("venues.description")}
       />
       <Toolbar
         start={
-          <SearchField label="Mekân ara…" value={query} onChange={setQuery} />
+          <SearchField
+            label={t("venues.search")}
+            value={query}
+            onChange={setQuery}
+          />
         }
         end={
           canEdit && (
@@ -37,7 +43,7 @@ export function VenuesPage() {
               icon={<IconPlus size="16" />}
               onClick={() => setCreating(true)}
             >
-              Yeni mekân
+              {t("venues.new")}
             </Button>
           )
         }
@@ -47,7 +53,8 @@ export function VenuesPage() {
       <Dialog
         open={creating}
         onClose={() => setCreating(false)}
-        title="Yeni mekân"
+        title={t("venues.new")}
+        closeLabel={t("dialog.close")}
       >
         <CreateVenueForm
           organizationId={organization.id}

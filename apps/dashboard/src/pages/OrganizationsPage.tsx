@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Button } from "../components/Button.tsx";
 import { Dialog } from "../components/Dialog.tsx";
 import { PageHeader } from "../components/PageHeader.tsx";
@@ -9,19 +10,20 @@ import { CreateOrganizationForm } from "../features/organizations/CreateOrganiza
 import { OrganizationList } from "../features/organizations/OrganizationList.tsx";
 
 export function OrganizationsPage() {
+  const { t } = useTranslation();
   const [creating, setCreating] = useState(false);
   const [query, setQuery] = useState("");
 
   return (
     <>
       <PageHeader
-        title="Organizasyonlarım"
-        description="Üyesi olduğun organizasyonlar. Birini seçince kenar çubuğu onun bölümlerini gösterir."
+        title={t("organizations.title")}
+        description={t("organizations.description")}
       />
       <Toolbar
         start={
           <SearchField
-            label="Organizasyon ara…"
+            label={t("organizations.search")}
             value={query}
             onChange={setQuery}
           />
@@ -31,7 +33,7 @@ export function OrganizationsPage() {
             icon={<IconPlus size="16" />}
             onClick={() => setCreating(true)}
           >
-            Yeni organizasyon
+            {t("organizations.new")}
           </Button>
         }
       />
@@ -40,7 +42,8 @@ export function OrganizationsPage() {
       <Dialog
         open={creating}
         onClose={() => setCreating(false)}
-        title="Yeni organizasyon"
+        title={t("organizations.new")}
+        closeLabel={t("dialog.close")}
       >
         <CreateOrganizationForm
           onSuccess={() => setCreating(false)}

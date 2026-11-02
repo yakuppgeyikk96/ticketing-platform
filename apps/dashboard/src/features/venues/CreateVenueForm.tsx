@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { validTimeZones, type CreateVenueInput } from "@ticketing/contracts";
 import type { SubmitEvent } from "react";
+import { useTranslation } from "react-i18next";
 import {
   describeError,
   fieldErrors,
@@ -19,7 +20,7 @@ const timeZoneOptions = [...validTimeZones].sort();
 interface CreateVenueFormProps {
   organizationId: string;
   onSuccess?: () => void;
-  // Given when the form sits in a dialog: shows a "Vazgeç" button.
+  // Given when the form sits in a dialog: shows a cancel button.
   onCancel?: () => void;
 }
 
@@ -28,6 +29,7 @@ export function CreateVenueForm({
   onSuccess,
   onCancel,
 }: CreateVenueFormProps) {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
 
   const mutation = useMutation({
@@ -67,7 +69,7 @@ export function CreateVenueForm({
   return (
     <Form onSubmit={handleSubmit}>
       <Field
-        label="Ad"
+        label={t("venues.form.name")}
         name="name"
         required
         minLength={2}
@@ -75,15 +77,20 @@ export function CreateVenueForm({
         autoFocus
         error={errors.name}
       />
-      <Field label="Şehir" name="city" maxLength={100} error={errors.city} />
       <Field
-        label="Adres"
+        label={t("venues.form.city")}
+        name="city"
+        maxLength={100}
+        error={errors.city}
+      />
+      <Field
+        label={t("venues.form.address")}
         name="address"
         maxLength={300}
         error={errors.address}
       />
       <SelectField
-        label="Saat dilimi"
+        label={t("venues.form.timezone")}
         name="timezone"
         defaultValue="Europe/Istanbul"
         error={errors.timezone}
@@ -95,25 +102,25 @@ export function CreateVenueForm({
         ))}
       </SelectField>
       <Field
-        label="Kapasite"
+        label={t("venues.form.capacity")}
         name="capacity"
         type="number"
         min={1}
         max={1_000_000}
-        hint="Boş bırakılırsa sınırsız sayılır."
+        hint={t("venues.form.capacityHint")}
         error={errors.capacity}
       />
       {mutation.isError && isFormLevelError(mutation.error) && (
-        <Form.Error>{describeError(mutation.error)}</Form.Error>
+        <Form.Error>{describeError(mutation.error, t)}</Form.Error>
       )}
       <Form.Actions>
         {onCancel && (
           <Button type="button" variant="secondary" onClick={onCancel}>
-            Vazgeç
+            {t("common.cancel")}
           </Button>
         )}
         <Button busy={mutation.isPending}>
-          {mutation.isPending ? "Ekleniyor…" : "Mekân ekle"}
+          {mutation.isPending ? t("common.adding") : t("venues.form.submit")}
         </Button>
       </Form.Actions>
     </Form>

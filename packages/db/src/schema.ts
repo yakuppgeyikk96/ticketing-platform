@@ -35,7 +35,9 @@ export const users = pgTable(
     fullName: text("full_name"),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
     emailVerifiedAt: timestamp("email_verified_at", { withTimezone: true }),
-    locale: text("locale", { enum: ["tr", "en"] }).notNull().default("tr"),
+    locale: text("locale", { enum: ["tr", "en"] })
+      .notNull()
+      .default("tr"),
     ...timestamps,
   },
   (t) => [

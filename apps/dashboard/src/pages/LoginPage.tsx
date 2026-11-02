@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { Link, Navigate, useLocation } from "react-router";
 import { useSession } from "../features/auth/useSession.ts";
 import { LoginForm } from "../features/auth/LoginForm.tsx";
@@ -13,6 +14,7 @@ function wasRegistered(state: unknown): boolean {
 }
 
 export function LoginPage() {
+  const { t } = useTranslation();
   const session = useSession();
   const location = useLocation();
 
@@ -31,22 +33,21 @@ export function LoginPage() {
         <section className={styles.card} aria-labelledby="login-title">
           <header className={styles.header}>
             <h1 id="login-title" className={styles.title}>
-              Giriş yap
+              {t("auth.login.title")}
             </h1>
-            <p className={styles.subtitle}>
-              Devam etmek için hesabınızla giriş yapın.
-            </p>
+            <p className={styles.subtitle}>{t("auth.login.subtitle")}</p>
           </header>
           {wasRegistered(location.state) && (
             <p role="status" className={styles.notice}>
-              Hesabınız oluşturuldu, şimdi giriş yapın.
+              {t("auth.login.registered")}
             </p>
           )}
 
           <LoginForm />
         </section>
         <p className={styles.help}>
-          Hesabınız yok mu? <Link to="/register">Kayıt olun</Link>
+          {t("auth.login.noAccount")}{" "}
+          <Link to="/register">{t("auth.login.registerLink")}</Link>
         </p>
       </div>
     </main>

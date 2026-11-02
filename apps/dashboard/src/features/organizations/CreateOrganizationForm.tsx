@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { SubmitEvent } from "react";
+import { useTranslation } from "react-i18next";
 import {
   describeError,
   fieldErrors,
@@ -16,7 +17,7 @@ import { textField } from "../../lib/form.ts";
 
 interface CreateOrganizationFormProps {
   onSuccess?: () => void;
-  // Given when the form sits in a dialog: shows a "Vazgeç" button.
+  // Given when the form sits in a dialog: shows a cancel button.
   onCancel?: () => void;
 }
 
@@ -24,6 +25,7 @@ export function CreateOrganizationForm({
   onSuccess,
   onCancel,
 }: CreateOrganizationFormProps) {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
 
   const mutation = useMutation({
@@ -57,26 +59,26 @@ export function CreateOrganizationForm({
   return (
     <Form onSubmit={handleSubmit}>
       <Field
-        label="Organizasyon adı"
+        label={t("organizations.form.name")}
         name="name"
         required
         minLength={2}
         maxLength={100}
         autoFocus
-        hint="Slug addan türetilir ve sonradan değiştirilemez."
+        hint={t("organizations.form.nameHint")}
         error={errors.name}
       />
       {mutation.isError && isFormLevelError(mutation.error) && (
-        <Form.Error>{describeError(mutation.error)}</Form.Error>
+        <Form.Error>{describeError(mutation.error, t)}</Form.Error>
       )}
       <Form.Actions>
         {onCancel && (
           <Button type="button" variant="secondary" onClick={onCancel}>
-            Vazgeç
+            {t("common.cancel")}
           </Button>
         )}
         <Button busy={mutation.isPending}>
-          {mutation.isPending ? "Oluşturuluyor…" : "Oluştur"}
+          {mutation.isPending ? t("common.creating") : t("common.create")}
         </Button>
       </Form.Actions>
     </Form>

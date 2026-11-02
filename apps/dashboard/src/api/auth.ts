@@ -5,6 +5,7 @@ import {
   type LoginInput,
   type RegisterInput,
   type RegisterResponse,
+  type UpdateMeInput,
 } from "@ticketing/contracts";
 import { request } from "./client.ts";
 import { z } from "zod";
@@ -27,6 +28,14 @@ export async function register(body: RegisterInput): Promise<RegisterResponse> {
 
 export async function me(): Promise<CurrentUser> {
   return await request("/auth/me", {
+    response: currentUserSchema,
+  });
+}
+
+export async function updateMe(body: UpdateMeInput): Promise<CurrentUser> {
+  return await request("/auth/me", {
+    method: "PATCH",
+    body,
     response: currentUserSchema,
   });
 }
