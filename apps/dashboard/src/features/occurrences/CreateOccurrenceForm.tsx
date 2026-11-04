@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { CreateOccurrenceInput } from "@ticketing/contracts";
-import type { SubmitEvent } from "react";
+import { useState, type SubmitEvent } from "react";
 import { useTranslation } from "react-i18next";
 import {
   describeError,
@@ -15,6 +15,7 @@ import { Form } from "../../components/Form.tsx";
 import { SelectField } from "../../components/SelectField.tsx";
 import { textField } from "../../lib/form.ts";
 import { toInstant } from "../../lib/time.ts";
+import { spacesQuery } from "../../api/spaces.ts";
 
 interface CreateOccurrenceFormProps {
   organizationId: string;
@@ -32,7 +33,15 @@ export function CreateOccurrenceForm({
 }: CreateOccurrenceFormProps) {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
+
+  const [venueId, setVenueId] = useState("");
+  const [spaceId, setSpaceId] = useState("");
+
   const venues = useQuery(venuesQuery(organizationId));
+  const spaces = useQuery({
+    ...spacesQuery(organizationId, venueId),
+    enabled: venueId !== "",
+  });
 
   const mutation = useMutation({
     mutationFn: (body: CreateOccurrenceInput) =>
@@ -47,7 +56,6 @@ export function CreateOccurrenceForm({
     event.preventDefault();
     const form = event.currentTarget;
     const data = new FormData(form);
-    const venueId = textField(data, "venueId");
     const endsAt = textField(data, "endsAt");
 
     // The wall time the admin typed belongs to the venue's clock, not to the
@@ -55,15 +63,23 @@ export function CreateOccurrenceForm({
     const venue = venues.data?.find((v) => v.id === venueId);
     if (!venue) throw new Error("selected venue missing from the loaded list");
 
+    const space = spaces.data?.find(
+      (item) => item.id === spaceId && item.venueId === venueId,
+    );
+
+    if (!space || mutation.isPending) return;
+
     mutation.mutate(
       {
-        venueId,
+        spaceId: space.id,
         startsAt: toInstant(textField(data, "startsAt"), venue.timezone),
         endsAt: endsAt ? toInstant(endsAt, venue.timezone) : undefined,
       },
       {
         onSuccess: () => {
           form.reset();
+          setVenueId("");
+          setSpaceId("");
           onSuccess?.();
         },
       },
@@ -87,14 +103,51 @@ export function CreateOccurrenceForm({
         name="venueId"
         required
         autoFocus
-        error={errors.venueId}
+        value={venueId}
+        disabled={mutation.isPending}
+        onChange={(event) => {
+          setVenueId(event.target.value);
+          setSpaceId("");
+          mutation.reset();
+        }}
       >
+        <option value="">{t("occurrences.form.selectVenue")}</option>
         {venues.data.map((venue) => (
           <option key={venue.id} value={venue.id}>
             {venue.name} ({venue.timezone})
           </option>
         ))}
       </SelectField>
+
+      {venueId && spaces.isPending && <p>{t("common.loading")}</p>}
+
+      {venueId && spaces.isError && (
+        <p role="alert">{describeError(spaces.error, t)}</p>
+      )}
+
+      {venueId &&
+        spaces.isSuccess &&
+        (spaces.data.length === 0 ? (
+          <p>{t("occurrences.form.needSpace")}</p>
+        ) : (
+          <SelectField
+            label={t("occurrences.form.space")}
+            name="spaceId"
+            required
+            value={spaceId}
+            disabled={mutation.isPending}
+            error={errors.spaceId}
+            onChange={(event) => setSpaceId(event.target.value)}
+          >
+            <option value="">{t("occurrences.form.selectSpace")}</option>
+            {spaces.data.map((space) => (
+              <option key={space.id} value={space.id}>
+                {space.name}
+              </option>
+            ))}
+          </SelectField>
+        ))}
+
       <Field
         label={t("occurrences.form.startsAt")}
         name="startsAt"
@@ -118,7 +171,16 @@ export function CreateOccurrenceForm({
             {t("common.cancel")}
           </Button>
         )}
-        <Button busy={mutation.isPending}>
+        <Button
+          busy={mutation.isPending}
+          disabled={
+            mutation.isPending ||
+            !spaces.isSuccess ||
+            !spaces.data.some(
+              (space) => space.id === spaceId && space.venueId === venueId,
+            )
+          }
+        >
           {mutation.isPending
             ? t("common.adding")
             : t("occurrences.form.submit")}

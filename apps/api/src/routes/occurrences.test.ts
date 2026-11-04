@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { after, before, test } from "node:test";
+import { spaces } from "@ticketing/db";
+import { eq } from "drizzle-orm";
 import {
   eventSchema,
   occurrenceSchema,
@@ -22,10 +24,10 @@ let app: TestApp;
 let owner: Actor;
 let staff: Actor;
 let org: string;
-let venue: string;
+let space: string;
 let outsider: Actor;
 let otherOrg: string;
-let otherVenue: string;
+let otherSpace: string;
 
 before(async () => {
   app = await startApp();
@@ -33,10 +35,13 @@ before(async () => {
   staff = await signUp(app);
   org = await createOrg(app, owner);
   await mustAddMember(app, owner, org, staff, "staff");
-  venue = await mustCreateVenue(owner, org);
+  space = await mustCreateSpace(org, await mustCreateVenue(owner, org));
   outsider = await signUp(app);
   otherOrg = await createOrg(app, outsider);
-  otherVenue = await mustCreateVenue(outsider, otherOrg);
+  otherSpace = await mustCreateSpace(
+    otherOrg,
+    await mustCreateVenue(outsider, otherOrg),
+  );
 });
 after(() => app.close());
 
@@ -63,6 +68,21 @@ async function mustCreateEvent(as: Actor, organizationId: string) {
   });
   assert.equal(res.statusCode, 201);
   return eventSchema.parse(res.json()).id;
+}
+
+// No space endpoint yet; seed the physical space directly for HTTP tests.
+async function mustCreateSpace(organizationId: string, venueId: string) {
+  const [row] = await app.db
+    .insert(spaces)
+    .values({
+      organizationId,
+      venueId,
+      name: "Ana alan",
+      slug: "ana-alan",
+    })
+    .returning({ id: spaces.id });
+  assert.ok(row, "space insert must return a row");
+  return row.id;
 }
 
 async function mustSetEventStatus(
@@ -95,7 +115,7 @@ function createOccurrence(
     url: base(organizationId, eventId),
     headers: { cookie: as.cookie },
     payload: {
-      venueId: venue,
+      spaceId: space,
       startsAt: "2026-12-01T20:00:00+03:00",
       ...payload,
     },
@@ -135,7 +155,16 @@ test("owner creates an occurrence; instants come back in UTC", async () => {
   assert.equal(res.statusCode, 201);
   const occurrence = occurrenceSchema.parse(res.json());
   assert.equal(occurrence.eventId, eventId);
-  assert.equal(occurrence.venueId, venue);
+  assert.equal(occurrence.spaceId, space);
+  assert.equal(occurrence.space.id, space);
+  assert.equal(occurrence.space.name, "Ana alan");
+  const [location] = await app.db
+    .select({ venueId: spaces.venueId })
+    .from(spaces)
+    .where(eq(spaces.id, space));
+  assert.ok(location);
+  assert.equal(occurrence.space.venue.id, location.venueId);
+  assert.equal(occurrence.space.venue.timezone, "Europe/Istanbul");
   assert.equal(occurrence.status, "draft");
   // +03:00 local evening is 17:00 UTC; the zone was the client's job.
   assert.equal(occurrence.startsAt, "2026-12-01T17:00:00.000Z");
@@ -171,27 +200,27 @@ test("endsAt before startsAt fails on the endsAt field", async () => {
   );
 });
 
-test("another organization's venue is rejected by the composite FK as 404", async () => {
+test("another organization's space is rejected by the composite FK as 404", async () => {
   const eventId = await mustCreateEvent(owner, org);
   const res = await createOccurrence(owner, org, eventId, {
-    venueId: otherVenue,
+    spaceId: otherSpace,
   });
   assert.equal(res.statusCode, 404);
   assert.equal(
     problemSchema.parse(res.json()).type,
-    "/problems/venue-not-found",
+    "/problems/space-not-found",
   );
 });
 
-test("an unknown venue id answers the same 404", async () => {
+test("an unknown space id answers the same 404", async () => {
   const eventId = await mustCreateEvent(owner, org);
   const res = await createOccurrence(owner, org, eventId, {
-    venueId: randomUUID(),
+    spaceId: randomUUID(),
   });
   assert.equal(res.statusCode, 404);
   assert.equal(
     problemSchema.parse(res.json()).type,
-    "/problems/venue-not-found",
+    "/problems/space-not-found",
   );
 });
 
@@ -223,8 +252,10 @@ test("list is in calendar order and 404 for an unknown event", async () => {
     headers: { cookie: staff.cookie },
   });
   assert.equal(res.statusCode, 200);
-  const ids = occurrencesResponseSchema.parse(res.json()).map((o) => o.id);
+  const listed = occurrencesResponseSchema.parse(res.json());
+  const ids = listed.map((o) => o.id);
   assert.deepEqual(ids, [earlier.id, later.id]);
+  assert.deepEqual(listed[0]?.space, earlier.space);
 
   const missing = await app.inject({
     method: "GET",
@@ -248,6 +279,7 @@ test("staff reads but cannot create or change status", async () => {
     headers: { cookie: staff.cookie },
   });
   assert.equal(read.statusCode, 200);
+  assert.deepEqual(occurrenceSchema.parse(read.json()).space, occurrence.space);
 
   const create = await createOccurrence(staff, org, eventId, {});
   assert.equal(create.statusCode, 403);
@@ -279,6 +311,10 @@ test("on_sale needs a published event; then draft ↔ on_sale and cancel work", 
     const res = await setStatus(owner, org, eventId, occurrence.id, status);
     assert.equal(res.statusCode, 200, `moving to ${status}`);
     assert.equal(occurrenceSchema.parse(res.json()).status, status);
+    assert.deepEqual(
+      occurrenceSchema.parse(res.json()).space,
+      occurrence.space,
+    );
   }
 
   // Cancelled is final.

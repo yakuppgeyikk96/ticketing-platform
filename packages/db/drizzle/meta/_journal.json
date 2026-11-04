@@ -43,6 +43,13 @@
       "when": 1793621816041,
       "tag": "0005_sturdy_fantastic_four",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1793820963419,
+      "tag": "0006_clean_korath",
+      "breakpoints": true
     }
   ]
 }

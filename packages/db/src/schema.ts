@@ -125,8 +125,40 @@ export const venues = pgTable(
   },
   (t) => [
     unique("venues_organization_id_slug_key").on(t.organizationId, t.slug),
-    // Target of the composite FK from occurrences; a FK may only point at a unique column set.
+    // Target of the composite FK from spaces; a FK may only point at a unique column set.
     unique("venues_organization_id_id_key").on(t.organizationId, t.id),
+  ],
+);
+
+export const spaces = pgTable(
+  "spaces",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`uuidv7()`),
+    organizationId: uuid("organization_id")
+      .notNull()
+      .references(() => organizations.id),
+    venueId: uuid("venue_id").notNull(),
+    name: text("name").notNull(),
+    slug: text("slug").notNull(),
+    description: text("description"),
+    capacity: integer("capacity"),
+    ...timestamps,
+  },
+  (t) => [
+    unique("spaces_venue_id_slug_key").on(t.venueId, t.slug),
+    // Target of the tenant-scoped FK from occurrences.
+    unique("spaces_organization_id_id_key").on(t.organizationId, t.id),
+    foreignKey({
+      name: "spaces_venue_fk",
+      columns: [t.organizationId, t.venueId],
+      foreignColumns: [venues.organizationId, venues.id],
+    }),
+    check(
+      "spaces_capacity_check",
+      sql`${t.capacity} is null or ${t.capacity} > 0`,
+    ),
   ],
 );
 
@@ -168,7 +200,7 @@ export const occurrences = pgTable(
       .notNull()
       .references(() => organizations.id),
     eventId: uuid("event_id").notNull(),
-    venueId: uuid("venue_id").notNull(),
+    spaceId: uuid("space_id").notNull(),
     startsAt: timestamp("starts_at", { withTimezone: true }).notNull(),
     endsAt: timestamp("ends_at", { withTimezone: true }),
     status: text("status", {
@@ -185,12 +217,12 @@ export const occurrences = pgTable(
       foreignColumns: [events.organizationId, events.id],
     }),
     foreignKey({
-      name: "occurrences_venue_fk",
-      columns: [t.organizationId, t.venueId],
-      foreignColumns: [venues.organizationId, venues.id],
+      name: "occurrences_space_fk",
+      columns: [t.organizationId, t.spaceId],
+      foreignColumns: [spaces.organizationId, spaces.id],
     }),
     index("occurrences_event_id_starts_at_idx").on(t.eventId, t.startsAt),
-    index("occurrences_venue_id_starts_at_idx").on(t.venueId, t.startsAt),
+    index("occurrences_space_id_starts_at_idx").on(t.spaceId, t.startsAt),
     check(
       "occurrences_status_check",
       sql`${t.status} in ('draft', 'on_sale', 'sold_out', 'cancelled', 'ended')`,

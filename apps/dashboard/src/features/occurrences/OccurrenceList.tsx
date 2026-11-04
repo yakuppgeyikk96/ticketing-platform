@@ -3,7 +3,6 @@ import type {
   MemberRole,
   Occurrence,
   OccurrenceStatus,
-  Venue,
 } from "@ticketing/contracts";
 import { useTranslation } from "react-i18next";
 import { describeError } from "../../api/errors.ts";
@@ -12,7 +11,6 @@ import {
   occurrencesQuery,
   updateOccurrenceStatus,
 } from "../../api/occurrences.ts";
-import { venuesQuery } from "../../api/venues.ts";
 import { ActionMenu } from "../../components/ActionMenu.tsx";
 import { Badge, type BadgeProps } from "../../components/Badge.tsx";
 import { Dropdown } from "../../components/Dropdown.tsx";
@@ -63,15 +61,11 @@ const statusMessages = {
 
 // An instant is shown in the venue's zone, whatever the viewer's clock says,
 // and in the viewer's language.
-function formatInVenue(
-  iso: string,
-  venue: Venue | undefined,
-  locale: string,
-): string {
+function formatInVenue(iso: string, timezone: string, locale: string): string {
   return new Intl.DateTimeFormat(locale, {
     dateStyle: "medium",
     timeStyle: "short",
-    timeZone: venue?.timezone,
+    timeZone: timezone,
   }).format(new Date(iso));
 }
 
@@ -85,8 +79,6 @@ export function OccurrenceList({
   const queryClient = useQueryClient();
 
   const occurrences = useQuery(occurrencesQuery(organizationId, eventId));
-  // Venue names and zones for the rows; the same query the create form uses.
-  const venues = useQuery(venuesQuery(organizationId));
 
   const statusChange = useMutation({
     mutationFn: ({
@@ -103,14 +95,13 @@ export function OccurrenceList({
   });
 
   const canEdit = role === "owner" || role === "admin";
-  const venueById = new Map(venues.data?.map((v) => [v.id, v]));
 
   const columns: TableColumn<Occurrence>[] = [
     {
       key: "startsAt",
       title: t("occurrences.column.date"),
       render: (startsAt: string, occurrence) => {
-        const venue = venueById.get(occurrence.venueId);
+        const venue = occurrence.space.venue;
         const failed =
           statusChange.isError &&
           statusChange.variables.occurrenceId === occurrence.id;
@@ -118,18 +109,18 @@ export function OccurrenceList({
           <div className={styles.cell}>
             <span className={styles.when}>
               <time dateTime={startsAt}>
-                {formatInVenue(startsAt, venue, locale)}
+                {formatInVenue(startsAt, venue.timezone, locale)}
               </time>
               {occurrence.endsAt && (
                 <span className={styles.until}>
                   {" → "}
                   <time dateTime={occurrence.endsAt}>
-                    {formatInVenue(occurrence.endsAt, venue, locale)}
+                    {formatInVenue(occurrence.endsAt, venue.timezone, locale)}
                   </time>
                 </span>
               )}
             </span>
-            {venue && <span className={styles.sub}>{venue.timezone}</span>}
+            <span className={styles.sub}>{venue.timezone}</span>
             {failed && (
               <p role="alert" className={styles.error}>
                 {describeError(statusChange.error, t, statusMessages)}
@@ -140,15 +131,13 @@ export function OccurrenceList({
       },
     },
     {
-      key: "venueId",
+      key: "space",
       title: t("occurrences.column.venue"),
-      render: (venueId: string) => {
-        const venue = venueById.get(venueId);
-        if (!venue) return "…";
+      render: (space: Occurrence["space"]) => {
         return (
           <div className={styles.cell}>
-            <span>{venue.name}</span>
-            {venue.city && <span className={styles.sub}>{venue.city}</span>}
+            <span>{space.venue.name}</span>
+            <span className={styles.sub}>{space.name}</span>
           </div>
         );
       },

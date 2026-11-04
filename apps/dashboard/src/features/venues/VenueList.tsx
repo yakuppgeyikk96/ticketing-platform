@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import type { Venue } from "@ticketing/contracts";
 import { useTranslation } from "react-i18next";
+import { Link } from "react-router";
 import { describeError } from "../../api/errors.ts";
 import { venuesQuery } from "../../api/venues.ts";
 import { Table, type TableColumn } from "../../components/Table.tsx";
@@ -28,7 +29,12 @@ export function VenueList({ organizationId, query = "" }: VenueListProps) {
       title: t("venues.column.name"),
       render: (name: string, venue) => (
         <div className={styles.cell}>
-          <span className={styles.name}>{name}</span>
+          <Link
+            className={styles.name}
+            to={`/organizations/${organizationId}/venues/${venue.id}`}
+          >
+            {name}
+          </Link>
           <code className={styles.slug}>{venue.slug}</code>
         </div>
       ),

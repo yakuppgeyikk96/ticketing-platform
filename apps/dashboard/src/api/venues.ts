@@ -24,6 +24,15 @@ export async function listVenues(organizationId: string): Promise<Venue[]> {
   });
 }
 
+export async function getVenue(
+  organizationId: string,
+  venueId: string,
+): Promise<Venue> {
+  return await request(`${venuesBase(organizationId)}/${venueId}`, {
+    response: venueSchema,
+  });
+}
+
 export function venuesQuery(organizationId: string) {
   return queryOptions({
     queryKey: venueKeys.list(organizationId),

@@ -22,6 +22,7 @@ import { organizationsRoutes } from "./routes/organizations.ts";
 import { venuesRoutes } from "./routes/venues.ts";
 import { eventsRoutes } from "./routes/events.ts";
 import { occurrencesRoutes } from "./routes/occurrences.ts";
+import { spacesRoutes } from "./routes/spaces.ts";
 
 export interface AppOptions {
   connectionString: string;
@@ -76,6 +77,10 @@ export async function createApp(opts: AppOptions) {
 
   await app.register(occurrencesRoutes, {
     prefix: "/organizations/:organizationId/events/:eventId/occurrences",
+  });
+
+  await app.register(spacesRoutes, {
+    prefix: "/organizations/:organizationId/venues/:venueId/spaces",
   });
 
   app

@@ -7,6 +7,8 @@ import {
   events,
   isForeignKeyViolation,
   occurrences,
+  spaces,
+  venues,
   type Db,
 } from "@ticketing/db";
 import { and, asc, eq } from "drizzle-orm";
@@ -16,20 +18,44 @@ const occurrenceColumns = {
   id: occurrences.id,
   organizationId: occurrences.organizationId,
   eventId: occurrences.eventId,
-  venueId: occurrences.venueId,
+  spaceId: occurrences.spaceId,
   startsAt: occurrences.startsAt,
   endsAt: occurrences.endsAt,
   status: occurrences.status,
-} satisfies Record<keyof Occurrence, unknown>;
+} satisfies Record<Exclude<keyof Occurrence, "space">, unknown>;
 
-type OccurrenceRow = typeof occurrences.$inferSelect;
+function selectOccurrences(db: Db) {
+  return db
+    .select({
+      ...occurrenceColumns,
+      space: { id: spaces.id, name: spaces.name },
+      venue: { id: venues.id, name: venues.name, timezone: venues.timezone },
+    })
+    .from(occurrences)
+    .innerJoin(
+      spaces,
+      and(
+        eq(spaces.id, occurrences.spaceId),
+        eq(spaces.organizationId, occurrences.organizationId),
+      ),
+    )
+    .innerJoin(
+      venues,
+      and(
+        eq(venues.id, spaces.venueId),
+        eq(venues.organizationId, spaces.organizationId),
+      ),
+    );
+}
+
+type OccurrenceRow = Awaited<ReturnType<typeof selectOccurrences>>[number];
 
 // The driver hands back Date for timestamptz; the contract speaks ISO strings.
-function toOccurrence(
-  row: Pick<OccurrenceRow, keyof typeof occurrenceColumns>,
-): Occurrence {
+function toOccurrence(row: OccurrenceRow): Occurrence {
+  const { space, venue, ...occurrence } = row;
   return {
-    ...row,
+    ...occurrence,
+    space: { ...space, venue },
     startsAt: row.startsAt.toISOString(),
     endsAt: row.endsAt?.toISOString() ?? null,
   };
@@ -67,21 +93,27 @@ export async function createOccurrence(
         .values({
           organizationId: input.organizationId,
           eventId: input.eventId,
-          venueId: input.venueId,
+          spaceId: input.spaceId,
           startsAt: new Date(input.startsAt),
           endsAt: input.endsAt ? new Date(input.endsAt) : null,
         })
-        .returning(occurrenceColumns);
+        .returning({ id: occurrences.id });
 
       if (!row) throw new Error("insert returned no row");
 
-      return toOccurrence(row);
+      const occurrence = await getOccurrence(tx, {
+        organizationId: input.organizationId,
+        eventId: input.eventId,
+        occurrenceId: row.id,
+      });
+      if (!occurrence) throw new Error("inserted occurrence not found");
+      return occurrence;
     });
   } catch (err) {
-    // Composite FK: the venue is missing or belongs to another organization.
-    // Both answer "not found"; the database checked it atomically with the insert.
-    if (isForeignKeyViolation(err, "occurrences_venue_fk")) {
-      throw new NotFoundError("venue-not-found", "Venue not found");
+    // Composite FK: the space is missing or belongs to another organization.
+    // Both answer "not found"; the database checks this atomically.
+    if (isForeignKeyViolation(err, "occurrences_space_fk")) {
+      throw new NotFoundError("space-not-found", "Space not found");
     }
     throw err;
   }
@@ -91,9 +123,7 @@ export async function listOccurrences(
   db: Db,
   params: { organizationId: string; eventId: string },
 ): Promise<Occurrence[]> {
-  const res = await db
-    .select(occurrenceColumns)
-    .from(occurrences)
+  const res = await selectOccurrences(db)
     .where(
       and(
         eq(occurrences.organizationId, params.organizationId),
@@ -109,9 +139,7 @@ export async function getOccurrence(
   db: Db,
   params: { organizationId: string; eventId: string; occurrenceId: string },
 ): Promise<Occurrence | null> {
-  const [row] = await db
-    .select(occurrenceColumns)
-    .from(occurrences)
+  const [row] = await selectOccurrences(db)
     .where(
       and(
         eq(occurrences.organizationId, params.organizationId),
@@ -202,10 +230,12 @@ export async function updateOccurrenceStatus(
           eq(occurrences.id, input.occurrenceId),
         ),
       )
-      .returning(occurrenceColumns);
+      .returning({ id: occurrences.id });
 
     if (!row) throw new Error("update returned no row");
 
-    return toOccurrence(row);
+    const occurrence = await getOccurrence(tx, input);
+    if (!occurrence) throw new Error("updated occurrence not found");
+    return occurrence;
   });
 }

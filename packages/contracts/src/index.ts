@@ -221,7 +221,7 @@ const instantInputSchema = z.iso
 
 export const createOccurrenceBodySchema = z
   .object({
-    venueId: z.uuid(),
+    spaceId: z.uuid(),
     startsAt: instantInputSchema,
     endsAt: instantInputSchema.optional(),
   })
@@ -250,7 +250,16 @@ export const occurrenceSchema = z.object({
   id: z.uuid(),
   organizationId: z.uuid(),
   eventId: z.uuid(),
-  venueId: z.uuid(),
+  spaceId: z.uuid(),
+  space: z.object({
+    id: z.uuid(),
+    name: z.string(),
+    venue: z.object({
+      id: z.uuid(),
+      name: z.string(),
+      timezone: z.string(),
+    }),
+  }),
   // Always UTC on the way out; the client renders it in the venue's zone.
   startsAt: z.iso.datetime(),
   endsAt: z.iso.datetime().nullable(),
@@ -264,6 +273,28 @@ export const occurrencesResponseSchema = z.array(occurrenceSchema);
 export const occurrenceParamsSchema = eventParamsSchema.extend({
   occurrenceId: z.uuid(),
 });
+
+export const createSpaceBodySchema = z.object({
+  name: z.string().trim().min(2).max(200),
+  description: z.string().trim().max(5000).optional(),
+  capacity: z.number().int().positive().optional(),
+});
+
+export type CreateSpaceInput = z.input<typeof createSpaceBodySchema>;
+
+export const spaceSchema = z.object({
+  id: z.uuid(),
+  organizationId: z.uuid(),
+  venueId: z.uuid(),
+  name: z.string(),
+  slug: z.string(),
+  description: z.string().nullable(),
+  capacity: z.number().int().positive().nullable(),
+});
+
+export type Space = z.output<typeof spaceSchema>;
+
+export const spacesResponseSchema = z.array(spaceSchema);
 
 // Named components in the generated OpenAPI document. This is zod's own
 // registry; the contracts package still knows nothing about the framework.
@@ -301,5 +332,7 @@ z.globalRegistry.add(updateOccurrenceStatusBodySchema, {
   id: "UpdateOccurrenceStatusBody",
 });
 z.globalRegistry.add(occurrenceSchema, { id: "Occurrence" });
+z.globalRegistry.add(spaceSchema, { id: "Space" });
+z.globalRegistry.add(createSpaceBodySchema, { id: "CreateSpaceBody" });
 
 export * from "./slug/index.ts";

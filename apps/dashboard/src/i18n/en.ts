@@ -189,6 +189,10 @@ export const en: Messages<typeof tr> = {
     count_other: "{{count}} occurrences",
     form: {
       venue: "Venue",
+      space: "Hall / Space",
+      selectVenue: "Select a venue",
+      selectSpace: "Select a hall / space",
+      needSpace: "This venue has no halls / spaces yet.",
       startsAt: "Starts",
       startsAtHint: "In the venue's time zone.",
       endsAt: "Ends",
@@ -201,6 +205,8 @@ export const en: Messages<typeof tr> = {
     },
   },
   venues: {
+    backToList: "Back to venues",
+    notFound: "Venue not found.",
     title: "Venues",
     description:
       "Where occurrences take place. The time zone decides which clock occurrence times are entered in.",
@@ -227,6 +233,19 @@ export const en: Messages<typeof tr> = {
       capacity: "Capacity",
       capacityHint: "Leave empty for unlimited.",
       submit: "Add venue",
+    },
+  },
+  spaces: {
+    title: "Halls / Spaces",
+    new: "Add hall / space",
+    empty: "No halls / spaces yet. Add one to create occurrences.",
+    form: {
+      name: "Name",
+      description: "Description",
+      capacity: "Reference capacity",
+      capacityHint:
+        "Leave empty if unknown. This does not determine ticket availability.",
+      submit: "Add hall / space",
     },
   },
   members: {

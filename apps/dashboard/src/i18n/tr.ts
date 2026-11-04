@@ -183,6 +183,10 @@ export const tr = {
     count_other: "{{count}} gösterim",
     form: {
       venue: "Mekân",
+      space: "Salon / Alan",
+      selectVenue: "Mekân seçin",
+      selectSpace: "Salon / alan seçin",
+      needSpace: "Bu mekânda henüz salon / alan tanımlanmamış.",
       startsAt: "Başlangıç",
       startsAtHint: "Mekânın saat dilimine göre.",
       endsAt: "Bitiş",
@@ -195,6 +199,8 @@ export const tr = {
     },
   },
   venues: {
+    backToList: "Mekânlara dön",
+    notFound: "Mekân bulunamadı.",
     title: "Mekânlar",
     description:
       "Gösterimlerin yapıldığı yerler. Saat dilimi, gösterim saatlerinin hangi saate göre girileceğini belirler.",
@@ -222,6 +228,20 @@ export const tr = {
       capacity: "Kapasite",
       capacityHint: "Boş bırakılırsa sınırsız sayılır.",
       submit: "Mekân ekle",
+    },
+  },
+  spaces: {
+    title: "Salonlar / Alanlar",
+    new: "Salon / alan ekle",
+    empty:
+      "Henüz salon / alan yok. Gösterim oluşturmak için bir salon / alan ekleyin.",
+    form: {
+      name: "Ad",
+      description: "Açıklama",
+      capacity: "Referans kapasite",
+      capacityHint:
+        "Bilinmiyorsa boş bırakın. Satılabilir bilet sayısını belirlemez.",
+      submit: "Salon / alan ekle",
     },
   },
   members: {
