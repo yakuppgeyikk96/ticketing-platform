@@ -3,6 +3,7 @@ import type {
   CreateSpaceLayoutResponse,
   SpaceLayout,
   SpaceLayoutVersion,
+  SpaceLayoutsResponse,
 } from "@ticketing/contracts";
 import {
   isForeignKeyViolation,
@@ -10,6 +11,7 @@ import {
   spaceLayoutVersions,
   type Db,
 } from "@ticketing/db";
+import { and, asc, desc, eq, sql } from "drizzle-orm";
 import { getSpace } from "../spaces/service.ts";
 import { NotFoundError } from "../errors.ts";
 
@@ -29,6 +31,52 @@ const versionColumns = {
   width: spaceLayoutVersions.width,
   height: spaceLayoutVersions.height,
 } satisfies Record<keyof SpaceLayoutVersion, unknown>;
+
+export async function listSpaceLayouts(
+  db: Db,
+  params: { organizationId: string; venueId: string; spaceId: string },
+): Promise<SpaceLayoutsResponse> {
+  const space = await getSpace(db, params);
+  if (!space) throw new NotFoundError("space-not-found", "Space not found");
+
+  function versionSummary(status: "draft" | "published") {
+    return db
+      .select({
+        id: spaceLayoutVersions.id,
+        version: spaceLayoutVersions.version,
+      })
+      .from(spaceLayoutVersions)
+      .where(
+        and(
+          eq(spaceLayoutVersions.organizationId, spaceLayouts.organizationId),
+          eq(spaceLayoutVersions.layoutId, spaceLayouts.id),
+          eq(spaceLayoutVersions.status, status),
+        ),
+      )
+      .orderBy(desc(spaceLayoutVersions.version))
+      .limit(1);
+  }
+
+  const draft = versionSummary("draft").as("draft_version");
+  const published = versionSummary("published").as("published_version");
+
+  return await db
+    .select({
+      ...layoutColumns,
+      draftVersion: { id: draft.id, version: draft.version },
+      latestPublishedVersion: { id: published.id, version: published.version },
+    })
+    .from(spaceLayouts)
+    .leftJoinLateral(draft, sql`true`)
+    .leftJoinLateral(published, sql`true`)
+    .where(
+      and(
+        eq(spaceLayouts.organizationId, params.organizationId),
+        eq(spaceLayouts.spaceId, params.spaceId),
+      ),
+    )
+    .orderBy(asc(spaceLayouts.name), asc(spaceLayouts.id));
+}
 
 export async function createSpaceLayout(
   db: Db,

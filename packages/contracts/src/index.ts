@@ -326,7 +326,6 @@ export const spaceLayoutSchema = z.object({
   name: z.string(),
 });
 export type SpaceLayout = z.output<typeof spaceLayoutSchema>;
-export const spaceLayoutsResponseSchema = z.array(spaceLayoutSchema);
 
 export const spaceLayoutVersionSchema = z.object({
   id: z.uuid(),
@@ -338,6 +337,23 @@ export const spaceLayoutVersionSchema = z.object({
   height: layoutDimensionSchema,
 });
 export type SpaceLayoutVersion = z.output<typeof spaceLayoutVersionSchema>;
+
+export const spaceLayoutVersionSummarySchema = spaceLayoutVersionSchema.pick({
+  id: true,
+  version: true,
+});
+export type SpaceLayoutVersionSummary = z.output<
+  typeof spaceLayoutVersionSummarySchema
+>;
+
+export const spaceLayoutListItemSchema = spaceLayoutSchema.extend({
+  draftVersion: spaceLayoutVersionSummarySchema.nullable(),
+  latestPublishedVersion: spaceLayoutVersionSummarySchema.nullable(),
+});
+export type SpaceLayoutListItem = z.output<typeof spaceLayoutListItemSchema>;
+
+export const spaceLayoutsResponseSchema = z.array(spaceLayoutListItemSchema);
+export type SpaceLayoutsResponse = z.output<typeof spaceLayoutsResponseSchema>;
 
 // Creating a layout also creates its first draft version in one transaction.
 export const createSpaceLayoutResponseSchema = z.object({
@@ -395,6 +411,10 @@ z.globalRegistry.add(createSpaceLayoutBodySchema, {
 });
 z.globalRegistry.add(spaceLayoutSchema, { id: "SpaceLayout" });
 z.globalRegistry.add(spaceLayoutVersionSchema, { id: "SpaceLayoutVersion" });
+z.globalRegistry.add(spaceLayoutVersionSummarySchema, {
+  id: "SpaceLayoutVersionSummary",
+});
+z.globalRegistry.add(spaceLayoutListItemSchema, { id: "SpaceLayoutListItem" });
 z.globalRegistry.add(createSpaceLayoutResponseSchema, {
   id: "CreateSpaceLayoutResponse",
 });
