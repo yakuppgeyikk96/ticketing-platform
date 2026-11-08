@@ -50,6 +50,13 @@
       "when": 1793820963419,
       "tag": "0006_clean_korath",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1794130561079,
+      "tag": "0007_tough_the_fallen",
+      "breakpoints": true
     }
   ]
 }

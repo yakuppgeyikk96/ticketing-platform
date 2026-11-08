@@ -296,6 +296,62 @@ export type Space = z.output<typeof spaceSchema>;
 
 export const spacesResponseSchema = z.array(spaceSchema);
 
+export const spaceParamsSchema = venueParamsSchema.extend({
+  spaceId: z.uuid(),
+});
+
+export const layoutVersionStatusSchema = z.enum([
+  "draft",
+  "published",
+  "archived",
+]);
+export type LayoutVersionStatus = z.infer<typeof layoutVersionStatusSchema>;
+
+// Logical drawing coordinates, independent of screen pixels or physical units.
+const layoutDimensionSchema = z.int().positive().max(2_147_483_647);
+
+export const createSpaceLayoutBodySchema = z.object({
+  name: z.string().trim().min(2).max(200),
+  width: layoutDimensionSchema,
+  height: layoutDimensionSchema,
+});
+export type CreateSpaceLayoutInput = z.input<
+  typeof createSpaceLayoutBodySchema
+>;
+
+export const spaceLayoutSchema = z.object({
+  id: z.uuid(),
+  organizationId: z.uuid(),
+  spaceId: z.uuid(),
+  name: z.string(),
+});
+export type SpaceLayout = z.output<typeof spaceLayoutSchema>;
+export const spaceLayoutsResponseSchema = z.array(spaceLayoutSchema);
+
+export const spaceLayoutVersionSchema = z.object({
+  id: z.uuid(),
+  organizationId: z.uuid(),
+  layoutId: z.uuid(),
+  version: z.int().positive().max(2_147_483_647),
+  status: layoutVersionStatusSchema,
+  width: layoutDimensionSchema,
+  height: layoutDimensionSchema,
+});
+export type SpaceLayoutVersion = z.output<typeof spaceLayoutVersionSchema>;
+
+// Creating a layout also creates its first draft version in one transaction.
+export const createSpaceLayoutResponseSchema = z.object({
+  layout: spaceLayoutSchema,
+  version: spaceLayoutVersionSchema,
+});
+export type CreateSpaceLayoutResponse = z.output<
+  typeof createSpaceLayoutResponseSchema
+>;
+
+export const spaceLayoutParamsSchema = spaceParamsSchema.extend({
+  layoutId: z.uuid(),
+});
+
 // Named components in the generated OpenAPI document. This is zod's own
 // registry; the contracts package still knows nothing about the framework.
 z.globalRegistry.add(problemSchema, { id: "Problem" });
@@ -334,5 +390,13 @@ z.globalRegistry.add(updateOccurrenceStatusBodySchema, {
 z.globalRegistry.add(occurrenceSchema, { id: "Occurrence" });
 z.globalRegistry.add(spaceSchema, { id: "Space" });
 z.globalRegistry.add(createSpaceBodySchema, { id: "CreateSpaceBody" });
+z.globalRegistry.add(createSpaceLayoutBodySchema, {
+  id: "CreateSpaceLayoutBody",
+});
+z.globalRegistry.add(spaceLayoutSchema, { id: "SpaceLayout" });
+z.globalRegistry.add(spaceLayoutVersionSchema, { id: "SpaceLayoutVersion" });
+z.globalRegistry.add(createSpaceLayoutResponseSchema, {
+  id: "CreateSpaceLayoutResponse",
+});
 
 export * from "./slug/index.ts";

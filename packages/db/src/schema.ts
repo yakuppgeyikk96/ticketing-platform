@@ -162,6 +162,77 @@ export const spaces = pgTable(
   ],
 );
 
+export const spaceLayouts = pgTable(
+  "space_layouts",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`uuidv7()`),
+    organizationId: uuid("organization_id")
+      .notNull()
+      .references(() => organizations.id),
+    spaceId: uuid("space_id").notNull(),
+    name: text("name").notNull(),
+    ...timestamps,
+  },
+  (t) => [
+    unique("space_layouts_organization_id_id_key").on(t.organizationId, t.id),
+    foreignKey({
+      name: "space_layouts_space_fk",
+      columns: [t.organizationId, t.spaceId],
+      foreignColumns: [spaces.organizationId, spaces.id],
+    }),
+    index("space_layouts_space_id_idx").on(t.spaceId),
+  ],
+);
+
+export const spaceLayoutVersions = pgTable(
+  "space_layout_versions",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`uuidv7()`),
+    organizationId: uuid("organization_id")
+      .notNull()
+      .references(() => organizations.id),
+    layoutId: uuid("layout_id").notNull(),
+    version: integer("version").notNull(),
+    status: text("status", { enum: ["draft", "published", "archived"] })
+      .notNull()
+      .default("draft"),
+    width: integer("width").notNull(),
+    height: integer("height").notNull(),
+    ...timestamps,
+  },
+  (t) => [
+    unique("space_layout_versions_layout_id_version_key").on(
+      t.layoutId,
+      t.version,
+    ),
+    unique("space_layout_versions_organization_id_id_key").on(
+      t.organizationId,
+      t.id,
+    ),
+    uniqueIndex("space_layout_versions_one_draft_idx")
+      .on(t.layoutId)
+      .where(sql`${t.status} = 'draft'`),
+    foreignKey({
+      name: "space_layout_versions_layout_fk",
+      columns: [t.organizationId, t.layoutId],
+      foreignColumns: [spaceLayouts.organizationId, spaceLayouts.id],
+    }),
+    check("space_layout_versions_version_check", sql`${t.version} > 0`),
+    check(
+      "space_layout_versions_status_check",
+      sql`${t.status} in ('draft', 'published', 'archived')`,
+    ),
+    check(
+      "space_layout_versions_dimensions_check",
+      sql`${t.width} > 0 and ${t.height} > 0`,
+    ),
+  ],
+);
+
 export const events = pgTable(
   "events",
   {

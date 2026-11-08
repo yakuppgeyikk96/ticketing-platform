@@ -40,6 +40,25 @@ export async function listSpaces(
     .orderBy(asc(spaces.name), asc(spaces.id));
 }
 
+export async function getSpace(
+  db: Db,
+  params: { organizationId: string; venueId: string; spaceId: string },
+): Promise<Space | null> {
+  const [row] = await db
+    .select()
+    .from(spaces)
+    .where(
+      and(
+        eq(spaces.organizationId, params.organizationId),
+        eq(spaces.venueId, params.venueId),
+        eq(spaces.id, params.spaceId),
+      ),
+    )
+    .limit(1);
+
+  return row ?? null;
+}
+
 export async function createSpace(
   db: Db,
   input: CreateSpaceInput & { organizationId: string; venueId: string },
