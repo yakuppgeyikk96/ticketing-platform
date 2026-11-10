@@ -230,6 +230,30 @@ export const tr = {
       submit: "Mekân ekle",
     },
   },
+  layouts: {
+    backToList: "Salonun düzenlerine dön",
+    notFound: "Düzen sürümü bulunamadı.",
+    drawingPlaceholder:
+      "Bu adımda çalışma alanı hazır. Çizim araçları sonraki adımda eklenecek.",
+    drawingLabel: "{{name}} — v{{n}} planı",
+    status: { draft: "Taslak", published: "Yayında", archived: "Arşivlenmiş" },
+    title: "{{name}} — Düzenler",
+    column: "Düzenler",
+    view: "Düzenleri göster",
+    new: "Düzen ekle",
+    empty: "Bu salon için henüz düzen yok.",
+    draft: "Taslak sürüm",
+    published: "Son yayınlanmış sürüm",
+    version: "v{{n}}",
+    form: {
+      name: "Düzen adı",
+      width: "Çalışma alanı genişliği",
+      height: "Çalışma alanı yüksekliği",
+      dimensionsHint:
+        "Boyutlar planın koordinat birimidir; metre veya ekran pikseli değildir.",
+      submit: "Düzen ekle",
+    },
+  },
   spaces: {
     title: "Salonlar / Alanlar",
     new: "Salon / alan ekle",

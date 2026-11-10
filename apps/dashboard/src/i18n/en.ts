@@ -235,6 +235,30 @@ export const en: Messages<typeof tr> = {
       submit: "Add venue",
     },
   },
+  layouts: {
+    backToList: "Back to space layouts",
+    notFound: "Layout version not found.",
+    drawingPlaceholder:
+      "The drawing area is ready. Drawing tools will be added in the next step.",
+    drawingLabel: "{{name}} — v{{n}} plan",
+    status: { draft: "Draft", published: "Published", archived: "Archived" },
+    title: "{{name}} — Layouts",
+    column: "Layouts",
+    view: "Show layouts",
+    new: "Add layout",
+    empty: "No layouts for this space yet.",
+    draft: "Draft version",
+    published: "Latest published version",
+    version: "v{{n}}",
+    form: {
+      name: "Layout name",
+      width: "Drawing area width",
+      height: "Drawing area height",
+      dimensionsHint:
+        "Dimensions use plan coordinates, not meters or screen pixels.",
+      submit: "Add layout",
+    },
+  },
   spaces: {
     title: "Halls / Spaces",
     new: "Add hall / space",

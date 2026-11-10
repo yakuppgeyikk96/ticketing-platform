@@ -67,6 +67,14 @@ export const router = createBrowserRouter([
                 }),
               },
               {
+                path: "venues/:venueId/spaces/:spaceId/layouts/:layoutId/versions/:versionId",
+                lazy: async () => ({
+                  Component: (
+                    await import("./pages/SpaceLayoutVersionPage.tsx")
+                  ).SpaceLayoutVersionPage,
+                }),
+              },
+              {
                 path: "members",
                 lazy: async () => ({
                   Component: (await import("./pages/MembersPage.tsx"))
