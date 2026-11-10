@@ -368,6 +368,18 @@ export const spaceLayoutParamsSchema = spaceParamsSchema.extend({
   layoutId: z.uuid(),
 });
 
+export const spaceLayoutVersionParamsSchema = spaceLayoutParamsSchema.extend({
+  versionId: z.uuid(),
+});
+
+export const spaceLayoutVersionResponseSchema = z.object({
+  layout: spaceLayoutSchema,
+  version: spaceLayoutVersionSchema,
+});
+export type SpaceLayoutVersionResponse = z.output<
+  typeof spaceLayoutVersionResponseSchema
+>;
+
 // Named components in the generated OpenAPI document. This is zod's own
 // registry; the contracts package still knows nothing about the framework.
 z.globalRegistry.add(problemSchema, { id: "Problem" });
@@ -417,6 +429,9 @@ z.globalRegistry.add(spaceLayoutVersionSummarySchema, {
 z.globalRegistry.add(spaceLayoutListItemSchema, { id: "SpaceLayoutListItem" });
 z.globalRegistry.add(createSpaceLayoutResponseSchema, {
   id: "CreateSpaceLayoutResponse",
+});
+z.globalRegistry.add(spaceLayoutVersionResponseSchema, {
+  id: "SpaceLayoutVersionResponse",
 });
 
 export * from "./slug/index.ts";

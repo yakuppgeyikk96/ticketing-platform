@@ -4,11 +4,13 @@ import type {
   SpaceLayout,
   SpaceLayoutVersion,
   SpaceLayoutsResponse,
+  SpaceLayoutVersionResponse,
 } from "@ticketing/contracts";
 import {
   isForeignKeyViolation,
   spaceLayouts,
   spaceLayoutVersions,
+  spaces,
   type Db,
 } from "@ticketing/db";
 import { and, asc, desc, eq, sql } from "drizzle-orm";
@@ -31,6 +33,47 @@ const versionColumns = {
   width: spaceLayoutVersions.width,
   height: spaceLayoutVersions.height,
 } satisfies Record<keyof SpaceLayoutVersion, unknown>;
+
+export async function getSpaceLayoutVersion(
+  db: Db,
+  params: {
+    organizationId: string;
+    venueId: string;
+    spaceId: string;
+    layoutId: string;
+    versionId: string;
+  },
+): Promise<SpaceLayoutVersionResponse | null> {
+  const [row] = await db
+    .select({ layout: layoutColumns, version: versionColumns })
+    .from(spaceLayoutVersions)
+    .innerJoin(
+      spaceLayouts,
+      and(
+        eq(spaceLayouts.id, spaceLayoutVersions.layoutId),
+        eq(spaceLayouts.organizationId, spaceLayoutVersions.organizationId),
+      ),
+    )
+    .innerJoin(
+      spaces,
+      and(
+        eq(spaces.id, spaceLayouts.spaceId),
+        eq(spaces.organizationId, spaceLayouts.organizationId),
+      ),
+    )
+    .where(
+      and(
+        eq(spaceLayoutVersions.id, params.versionId),
+        eq(spaceLayouts.id, params.layoutId),
+        eq(spaceLayouts.organizationId, params.organizationId),
+        eq(spaces.id, params.spaceId),
+        eq(spaces.venueId, params.venueId),
+      ),
+    )
+    .limit(1);
+
+  return row ?? null;
+}
 
 export async function listSpaceLayouts(
   db: Db,

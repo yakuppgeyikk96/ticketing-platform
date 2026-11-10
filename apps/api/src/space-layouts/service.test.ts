@@ -4,6 +4,7 @@ import { after, before, test } from "node:test";
 import {
   createSpaceLayoutResponseSchema,
   spaceLayoutsResponseSchema,
+  spaceLayoutVersionResponseSchema,
 } from "@ticketing/contracts";
 import {
   spaces,
@@ -18,7 +19,11 @@ import {
   startApp,
   type TestApp,
 } from "../testing/harness.ts";
-import { createSpaceLayout, listSpaceLayouts } from "./service.ts";
+import {
+  createSpaceLayout,
+  getSpaceLayoutVersion,
+  listSpaceLayouts,
+} from "./service.ts";
 
 let app: TestApp;
 let organizationId: string;
@@ -53,6 +58,83 @@ before(async () => {
 });
 
 after(() => app.close());
+
+test("reads a version with its layout in every lifecycle status", async () => {
+  const created = await createSpaceLayout(app.db, {
+    organizationId,
+    venueId,
+    spaceId,
+    name: "Detail",
+    width: 1200,
+    height: 800,
+  });
+  const params = {
+    organizationId,
+    venueId,
+    spaceId,
+    layoutId: created.layout.id,
+    versionId: created.version.id,
+  };
+  for (const status of ["draft", "published", "archived"] as const) {
+    await app.db
+      .update(spaceLayoutVersions)
+      .set({ status })
+      .where(eq(spaceLayoutVersions.id, params.versionId));
+    const result = spaceLayoutVersionResponseSchema.parse(
+      await getSpaceLayoutVersion(app.db, params),
+    );
+    assert.deepEqual(result, {
+      layout: created.layout,
+      version: { ...created.version, status },
+    });
+  }
+});
+
+test("version detail checks the full organization, venue, space and layout path", async () => {
+  const first = await createSpaceLayout(app.db, {
+    organizationId,
+    venueId,
+    spaceId,
+    name: "First",
+    width: 1200,
+    height: 800,
+  });
+  const second = await createSpaceLayout(app.db, {
+    organizationId,
+    venueId,
+    spaceId,
+    name: "Second",
+    width: 1200,
+    height: 800,
+  });
+  const params = {
+    organizationId,
+    venueId,
+    spaceId,
+    layoutId: first.layout.id,
+    versionId: first.version.id,
+  };
+  for (const field of [
+    "organizationId",
+    "venueId",
+    "spaceId",
+    "layoutId",
+    "versionId",
+  ] as const) {
+    assert.equal(
+      await getSpaceLayoutVersion(app.db, { ...params, [field]: randomUUID() }),
+      null,
+      field,
+    );
+  }
+  assert.equal(
+    await getSpaceLayoutVersion(app.db, {
+      ...params,
+      versionId: second.version.id,
+    }),
+    null,
+  );
+});
 
 test("lists only the selected space with draft and latest published summaries", async () => {
   const [space] = await app.db

@@ -5,6 +5,7 @@ import {
   createSpaceLayoutResponseSchema,
   problemSchema,
   spaceLayoutsResponseSchema,
+  spaceLayoutVersionResponseSchema,
   spaceSchema,
   venueSchema,
 } from "@ticketing/contracts";
@@ -89,6 +90,108 @@ function list(
     headers: actor ? { cookie: actor.cookie } : {},
   });
 }
+
+function detail(
+  actor: Actor | null,
+  layoutId: string,
+  versionId: string,
+  params: { organizationId?: string; venueId?: string; spaceId?: string } = {},
+) {
+  return app.inject({
+    method: "GET",
+    url: `/organizations/${params.organizationId ?? org}/venues/${params.venueId ?? venueId}/spaces/${params.spaceId ?? spaceId}/layouts/${layoutId}/versions/${versionId}`,
+    headers: actor ? { cookie: actor.cookie } : {},
+  });
+}
+
+test("owner, admin and staff read version details in every lifecycle status", async () => {
+  const created = await create(owner);
+  assert.equal(created.statusCode, 201);
+  const expected = createSpaceLayoutResponseSchema.parse(created.json());
+  for (const status of ["draft", "published", "archived"] as const) {
+    await app.db
+      .update(spaceLayoutVersions)
+      .set({ status })
+      .where(eq(spaceLayoutVersions.id, expected.version.id));
+    for (const actor of [owner, admin, staff]) {
+      const res = await detail(actor, expected.layout.id, expected.version.id);
+      assert.equal(res.statusCode, 200);
+      assert.deepEqual(spaceLayoutVersionResponseSchema.parse(res.json()), {
+        layout: expected.layout,
+        version: { ...expected.version, status },
+      });
+    }
+  }
+});
+
+test("version detail requires a session and hides another organization's data", async () => {
+  const created = await create(owner);
+  assert.equal(created.statusCode, 201);
+  const { layout, version } = createSpaceLayoutResponseSchema.parse(
+    created.json(),
+  );
+  const anonymous = await detail(null, layout.id, version.id);
+  assert.equal(anonymous.statusCode, 401);
+  problemSchema.parse(anonymous.json());
+  const res = await detail(outsider, layout.id, version.id);
+  assert.equal(res.statusCode, 404);
+  assert.equal(
+    problemSchema.parse(res.json()).type,
+    "/problems/organization-not-found",
+  );
+});
+
+test("version detail rejects missing and mismatched path relationships", async () => {
+  const first = await create(owner);
+  const second = await create(owner);
+  assert.equal(first.statusCode, 201);
+  assert.equal(second.statusCode, 201);
+  const { layout, version } = createSpaceLayoutResponseSchema.parse(
+    first.json(),
+  );
+  const other = createSpaceLayoutResponseSchema.parse(second.json());
+  const responses = [
+    await detail(owner, randomUUID(), version.id),
+    await detail(owner, layout.id, randomUUID()),
+    await detail(owner, other.layout.id, version.id),
+    await detail(owner, layout.id, version.id, { spaceId: otherSpaceId }),
+    await detail(owner, layout.id, version.id, { spaceId: randomUUID() }),
+    await detail(owner, layout.id, version.id, { venueId: secondVenueId }),
+  ];
+  for (const res of responses) {
+    assert.equal(res.statusCode, 404);
+    assert.equal(
+      problemSchema.parse(res.json()).type,
+      "/problems/layout-version-not-found",
+    );
+  }
+});
+
+test("version detail validates every URL id", async () => {
+  for (const field of [
+    "organizationId",
+    "venueId",
+    "spaceId",
+    "layoutId",
+    "versionId",
+  ] as const) {
+    const ids = {
+      organizationId: org,
+      venueId,
+      spaceId,
+      layoutId: randomUUID(),
+      versionId: randomUUID(),
+      [field]: "invalid",
+    };
+    const res = await detail(owner, ids.layoutId, ids.versionId, ids);
+    assert.equal(res.statusCode, 400);
+    assert.ok(
+      problemSchema
+        .parse(res.json())
+        .errors?.some((error) => error.field === field),
+    );
+  }
+});
 
 test("owner, admin and staff list only the selected space's layouts with version summaries", async () => {
   const location = await createLocation(owner, org);
