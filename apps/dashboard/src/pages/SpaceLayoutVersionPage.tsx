@@ -6,7 +6,7 @@ import { ApiError } from "../api/client.ts";
 import { describeError } from "../api/errors.ts";
 import { spaceLayoutVersionQuery } from "../api/space-layouts.ts";
 import { PageHeader } from "../components/PageHeader.tsx";
-import styles from "./SpaceLayoutVersionPage.module.css";
+import { LayoutVersionDrawing } from "../features/space-layouts/LayoutVersionDrawing.tsx";
 
 export function SpaceLayoutVersionPage() {
   const { t } = useTranslation();
@@ -58,24 +58,15 @@ export function SpaceLayoutVersionPage() {
         title={layout.name}
         description={`${t("layouts.version", { n: version.version })} · ${t(`layouts.status.${version.status}`)} · ${version.width} × ${version.height}`}
       />
-      <p>{t("layouts.drawingPlaceholder")}</p>
-      <div className={styles.workspace}>
-        <svg
-          className={styles.plan}
-          viewBox={`0 0 ${version.width} ${version.height}`}
-          role="img"
-          aria-label={t("layouts.drawingLabel", {
-            name: layout.name,
-            n: version.version,
-          })}
-        >
-          <rect
-            width={version.width}
-            height={version.height}
-            className={styles.background}
-          />
-        </svg>
-      </div>
+      <LayoutVersionDrawing
+        key={`${organization.id}:${version.id}:${version.width}:${version.height}`}
+        version={version}
+        canEdit={organization.role === "owner" || organization.role === "admin"}
+        label={t("layouts.drawingLabel", {
+          name: layout.name,
+          n: version.version,
+        })}
+      />
     </>
   );
 }

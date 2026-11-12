@@ -19,7 +19,8 @@
     "@tanstack/react-query": "catalog:",
     "react-router": "catalog:",
     "i18next": "catalog:",
-    "react-i18next": "catalog:"
+    "react-i18next": "catalog:",
+    "@ticketing/layout-editor": "workspace:*"
   },
   "devDependencies": {
     "@ticketing/tsconfig": "workspace:*",
