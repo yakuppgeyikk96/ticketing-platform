@@ -1,0 +1,35 @@
+{
+  "name": "@ticketing/layout-editor",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./react": "./src/react/index.ts"
+  },
+  "scripts": {
+    "dev": "vite demo --host 127.0.0.1 --port 5174 --strictPort",
+    "build:demo": "vite build demo --outDir ../dist/demo",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p demo/tsconfig.json",
+    "test": "node --test src/core/*.test.mjs && vitest run src/react"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@ticketing/tsconfig": "workspace:*",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "@types/node": "catalog:",
+    "vite": "catalog:",
+    "vitest": "catalog:",
+    "typescript": "catalog:"
+  }
+}

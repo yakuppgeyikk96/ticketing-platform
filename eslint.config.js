@@ -41,6 +41,14 @@ export default defineConfig(
     languageOptions: { globals: globals.browser },
   },
   {
+    files: [
+      "packages/layout-editor/src/react/**/*.{ts,tsx}",
+      "packages/layout-editor/demo/**/*.{ts,tsx}",
+    ],
+    extends: [reactHooks.configs.flat.recommended],
+    languageOptions: { globals: globals.browser },
+  },
+  {
     // Next.js app: hooks rules apply, react-refresh does not (Vite-only).
     files: ["apps/public/src/**/*.{ts,tsx}"],
     extends: [reactHooks.configs.flat.recommended],

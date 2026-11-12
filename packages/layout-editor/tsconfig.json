@@ -1,0 +1,10 @@
+{
+  "extends": "@ticketing/tsconfig/base.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "jsx": "react-jsx",
+    "types": [],
+    "lib": ["ES2024", "DOM"]
+  },
+  "include": ["src"]
+}
